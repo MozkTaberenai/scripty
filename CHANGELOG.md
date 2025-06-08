@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolved all clippy warnings with appropriate safety considerations
 - Improved code quality and consistency across examples and tests
 
-### Deprecated
+### Removed
 - `pipe_stderr()` method (use `pipe_err()` instead)
 - `pipe_both()` method (use `pipe_out_err()` instead)
 
