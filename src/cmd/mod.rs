@@ -10,7 +10,8 @@ mod types;
 pub use error::Error;
 pub use types::{Cmd, Pipeline, PipelineHandle, PipelineSpawn};
 
-// Internal items for testing
+// Internal items for testing and io_ext
+pub(crate) use types::CmdInput;
 #[cfg(test)]
 pub(crate) use types::PipeMode;
 

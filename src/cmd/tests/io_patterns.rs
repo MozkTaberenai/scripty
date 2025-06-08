@@ -13,6 +13,7 @@
 //! - 111: All I/O (spawn_io_all) - Complete control
 
 use crate::cmd;
+use crate::io_ext::ReadExt;
 use std::io::{BufRead, BufReader, Cursor, Read, Write};
 use std::thread;
 
@@ -351,23 +352,19 @@ fn test_pattern_111_complete_io_control() {
 /// Test classic input/output methods for backward compatibility
 #[test]
 fn test_classic_io_methods() {
-    // Test input_reader()
+    // Test ReadExt::pipe()
     let data = "apple\nbanana\ncherry\ndate\nfig";
     let cursor = Cursor::new(data.as_bytes());
-    let output = cmd!("grep", "a")
-        .input_reader(cursor)
-        .no_echo()
-        .output()
-        .unwrap();
+    let output = cursor.pipe(cmd!("grep", "a")).no_echo().output().unwrap();
     assert!(output.contains("apple"));
     assert!(output.contains("banana"));
     assert!(output.contains("date"));
 
-    // Test stream_to()
+    // Test write_to()
     let mut buffer = Vec::new();
     cmd!("echo", "test_stream")
         .no_echo()
-        .stream_to(&mut buffer)
+        .write_to(&mut buffer)
         .unwrap();
     let result = String::from_utf8(buffer).unwrap();
     assert_eq!(result.trim(), "test_stream");
@@ -383,6 +380,29 @@ fn test_classic_io_methods() {
     let result = String::from_utf8(output_buffer).unwrap();
     assert!(result.contains("apple"));
     assert!(result.contains("banana"));
+
+    // Test run_with_err_io()
+    let invalid_rust_code = "fn main() { invalid syntax }";
+    let input_reader = Cursor::new(invalid_rust_code);
+    let mut error_buffer = Vec::new();
+    let _ = cmd!("rustc", "--error-format=short", "-")
+        .no_echo()
+        .run_with_err_io(input_reader, &mut error_buffer);
+    let error_output = String::from_utf8(error_buffer).unwrap();
+    // rustc should produce some error output
+    assert!(!error_output.is_empty());
+
+    // Test run_with_both_io()
+    let input_data = "test data\nmore data";
+    let input_reader = Cursor::new(input_data);
+    let combined_buffer = Vec::new();
+    let cursor = Cursor::new(combined_buffer);
+    cmd!("sh", "-c", "cat; echo 'stderr message' >&2")
+        .no_echo()
+        .run_with_both_io(input_reader, cursor)
+        .unwrap();
+    // Note: This test verifies that run_with_both_io executes without error
+    // Actual output verification would require a more complex setup
 }
 
 /// Test binary data handling across patterns

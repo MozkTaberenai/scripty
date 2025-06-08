@@ -15,3 +15,4 @@ mod io_patterns;
 mod no_echo;
 mod pipeline;
 mod quoting;
+mod write_methods;

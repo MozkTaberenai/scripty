@@ -18,6 +18,8 @@
 //! - **⚡ Minimal dependencies**: Only uses `anstyle` for colors
 //! - **🛡️ Type safe**: All the safety of Rust with the convenience of shell scripts
 //! - **🚰 Streaming I/O**: Efficient handling of large data with readers and writers
+//! - **🔌 Reader Extensions**: Fluent piping from any `Read` implementation to commands
+//! - **✍️ Write Methods**: Direct output streaming to writers with stdout/stderr control
 //!
 //! ## Quick Start
 //!
@@ -63,6 +65,34 @@
 //!     .current_dir("/var/log")
 //!     .env("LANG", "C")
 //!     .run()?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ### Reader-to-Command Piping
+//!
+//! Pipe data directly from any `Read` implementation to commands using the `ReadExt` trait:
+//!
+//! ```no_run
+//! use scripty::*;
+//! use std::fs::File;
+//! use std::io::{BufReader, Cursor};
+//!
+//! // Pipe file contents directly to commands
+//! let file = File::open("data.txt")?;
+//! let result = file.pipe(cmd!("grep", "pattern"))
+//!     .pipe(cmd!("sort"))
+//!     .pipe(cmd!("uniq"))
+//!     .output()?;
+//!
+//! // Memory-efficient processing with BufReader
+//! let large_file = File::open("huge_dataset.txt")?;
+//! let reader = BufReader::new(large_file);
+//! reader.pipe(cmd!("awk", "{sum += $1} END {print sum}"))
+//!     .run()?;
+//!
+//! // In-memory data processing
+//! let data = Cursor::new(b"zebra\napple\ncherry\n");
+//! let sorted = data.pipe(cmd!("sort")).output()?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
@@ -176,11 +206,32 @@
 //!
 //! // Capture binary output
 //! let bytes = cmd!("cat", "binary-file").output_bytes()?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
 //!
-//! // Stream to a writer
+//! #### Output Streaming with Write Methods
+//!
+//! Stream command output directly to writers with precise control over stdout/stderr:
+//!
+//! ```no_run
+//! use scripty::*;
 //! use std::fs::File;
-//! let file = File::create("output.txt")?;
-//! cmd!("echo", "hello").stream_to(file)?;
+//!
+//! // Stream stdout to a file
+//! let output_file = File::create("output.txt")?;
+//! cmd!("ls", "-la").write_to(output_file)?;
+//!
+//! // Stream stderr to an error log
+//! let error_file = File::create("errors.log")?;
+//! cmd!("risky-command").write_err_to(error_file)?;
+//!
+//! // Stream both stdout and stderr to the same destination
+//! let combined_file = File::create("full.log")?;
+//! cmd!("verbose-app").write_both_to(combined_file)?;
+//!
+//! // Use with any Writer (Vec, File, Cursor, etc.)
+//! let mut buffer = Vec::new();
+//! cmd!("echo", "test").write_to(&mut buffer)?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
@@ -203,15 +254,16 @@
 //!     .input_bytes(b"binary data")
 //!     .output_bytes()?;
 //!
-//! // Stream from reader
+//! // Stream from reader using ReadExt
 //! use std::fs::File;
 //! let file = File::open("data.txt")?;
-//! cmd!("sort").input_reader(file).run()?;
+//! file.pipe(cmd!("sort")).run()?;
 //!
 //! // Buffered reading for large files
 //! use std::io::BufReader;
 //! let large_file = File::open("large.txt")?;
-//! cmd!("grep", "pattern").input_reader(BufReader::new(large_file)).run()?;
+//! let reader = BufReader::new(large_file);
+//! reader.pipe(cmd!("grep", "pattern")).run()?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
@@ -245,6 +297,33 @@
 //! }
 //!
 //! spawn.handle.wait()?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! #### Simple Reader-to-Writer Operations
+//!
+//! For straightforward input-to-output scenarios:
+//!
+//! ```no_run
+//! use scripty::*;
+//! use std::fs::File;
+//! use std::io::Cursor;
+//!
+//! // Process file data through command (stdout)
+//! let input_file = File::open("data.txt")?;
+//! let output_file = File::create("sorted.txt")?;
+//! cmd!("sort").run_with_io(input_file, output_file)?;
+//!
+//! // Capture error output while processing
+//! let source_code = Cursor::new("fn main() { invalid syntax }");
+//! let mut error_log = Vec::new();
+//! let _ = cmd!("rustc", "-").run_with_err_io(source_code, &mut error_log);
+//! println!("Compilation errors: {}", String::from_utf8_lossy(&error_log));
+//!
+//! // Capture both stdout and stderr for comprehensive logging
+//! let input_data = Cursor::new("test data\nmore data");
+//! let log_file = File::create("process.log")?;
+//! cmd!("complex-tool").run_with_both_io(input_data, log_file)?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
@@ -326,13 +405,17 @@
 //!
 //! 1. **`01_simple_pipes.rs`** - Basic pipeline operations and command chaining
 //! 2. **`02_pipe_modes.rs`** - Complete pipeline control with stdout/stderr piping
-//! 3. **`03_io_patterns.rs`** - Complete I/O methods reference with Reader/Writer patterns
+//! 3. **`03_read_ext.rs`** - Fluent reader-to-command piping with ReadExt trait
+//! 4. **`04_run_with_io.rs`** - Blocking reader-writer I/O with run_with_*() methods
+//! 5. **`05_spawn_io.rs`** - Non-blocking I/O control with spawn_io_*() methods
 //!
 //! Run examples in order for the best learning experience:
 //! ```bash
 //! cargo run --example 01_simple_pipes    # 1. Pipeline fundamentals
 //! cargo run --example 02_pipe_modes      # 2. Advanced piping control
-//! cargo run --example 03_io_patterns     # 3. Complete I/O methods
+//! cargo run --example 03_read_ext        # 3. Reader-to-command piping
+//! cargo run --example 04_run_with_io     # 4. Blocking reader-writer I/O
+//! cargo run --example 05_spawn_io        # 5. Non-blocking I/O control
 //! ```
 //!
 //! **Learning Path:** Start with `01_simple_pipes.rs` and progress through each numbered example in sequence to build your expertise with scripty's pipeline and I/O capabilities.
@@ -356,9 +439,8 @@
 //! // ✅ Memory efficient: Stream large data directly
 //! use std::fs::File;
 //! let large_file = File::open("multi_gb_file.txt")?;
-//! cmd!("grep", "ERROR")
+//! large_file.pipe(cmd!("grep", "ERROR"))
 //!     .pipe(cmd!("wc", "-l"))
-//!     .input_reader(large_file)
 //!     .output()?; // Handles gigabytes efficiently
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
@@ -376,8 +458,11 @@
 //!     .output()?;
 //!
 //! // ❌ Avoid: Loading large outputs into memory first
-//! let large_output = cmd!("find", "/", "-type", "f").output()?; // Don't do this
-//! cmd!("grep", "pattern").input(&large_output).output()?;
+//! // let large_output = cmd!("find", "/", "-type", "f").output()?; // Don't do this
+//! // Instead, use streaming with pipes directly
+//! cmd!("find", "/", "-type", "f")
+//!     .pipe(cmd!("grep", "pattern"))
+//!     .output()?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
@@ -421,15 +506,14 @@
 //! ```no_run
 //! use scripty::*;
 //! // Problem: Memory usage with large files
-//! // Solution: Use streaming with BufReader
+//! // Solution: Use streaming with BufReader and ReadExt
 //! use std::io::BufReader;
 //! use std::fs::File;
 //!
 //! let large_file = File::open("huge_dataset.txt")?;
 //! let reader = BufReader::new(large_file);
 //!
-//! cmd!("awk", "{sum += $1} END {print sum}")
-//!     .input_reader(reader)
+//! reader.pipe(cmd!("awk", "{sum += $1} END {print sum}"))
 //!     .output()?; // Processes efficiently regardless of file size
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
@@ -489,6 +573,9 @@ mod cmd;
 pub use cmd::*;
 
 pub mod fs;
+
+mod io_ext;
+pub use io_ext::ReadExt;
 
 mod output;
 
