@@ -35,9 +35,14 @@ scripty/
 ├── src/
 │   ├── lib.rs              # Main documentation (README source)
 │   ├── cmd/                # Command execution functionality
-│   │   ├── mod.rs          # Core implementation
-│   │   └── tests.rs        # Test suite
-│   ├── echo.rs             # Output formatting
+│   │   ├── mod.rs          # Module entry point
+│   │   ├── command.rs      # Command building and execution
+│   │   ├── error.rs        # Error handling
+│   │   ├── macros.rs       # Convenience macros
+│   │   ├── pipeline.rs     # Pipeline implementation
+│   │   ├── types.rs        # Type definitions
+│   │   └── tests/          # Test suite directory
+│   ├── output.rs           # Output formatting
 │   ├── fs.rs               # File system operations
 │   ├── color.rs            # Color definitions (internal)
 │   └── style.rs            # Style definitions (internal)

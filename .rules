@@ -19,16 +19,15 @@ See `Cargo.toml` for official project metadata (name, description, version, etc.
 - **Dependencies**: Minimal (see Cargo.toml)
 - **Testing**: Unit tests + integration tests + doc tests
 
-### File Layout
-```
-scripty/
-├── src/
-│   ├── lib.rs              # Main library entry point
-│   ├── cmd/
-│   │   ├── mod.rs          # Command execution core
-│   │   └── tests/          # Unit tests by category
-│   └── output.rs           # Output handling utilities
-├── tests/                  # Integration tests
-├── examples/               # Example code by difficulty level
-└── Cargo.toml             # Project metadata and dependencies
-```
+### Project Structure and Documentation
+- See `CONTRIBUTING.md` for detailed project structure and development guidelines
+- **AI Responsibility**: When making changes that affect project structure, file organization, or development procedures, proactively update `CONTRIBUTING.md` to reflect these changes
+- **Documentation Maintenance**: Always verify that documentation matches current project state before completing tasks
+
+### Documentation Update Triggers
+AI agents should update `CONTRIBUTING.md` when:
+- Adding, removing, or moving source files or directories
+- Changing development workflows or build processes
+- Modifying testing strategies or CI/CD procedures
+- Adding new development tools or dependencies
+- Restructuring the codebase organization
