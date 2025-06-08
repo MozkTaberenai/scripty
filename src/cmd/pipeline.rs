@@ -947,7 +947,10 @@ impl Pipeline {
         let mut parts = Vec::new();
 
         // Add cmd prefix
-        parts.push(format!("{BRIGHT_BLACK}{}:cmd{BRIGHT_BLACK:#}", env!("CARGO_PKG_NAME")));
+        parts.push(format!(
+            "{BRIGHT_BLACK}{}:cmd{BRIGHT_BLACK:#}",
+            env!("CARGO_PKG_NAME")
+        ));
 
         for (i, (cmd, pipe_mode)) in self.connections.iter().enumerate() {
             if i > 0 {
