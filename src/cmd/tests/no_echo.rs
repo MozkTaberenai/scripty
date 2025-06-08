@@ -123,7 +123,7 @@ fn test_no_echo_mode_consistency() {
 fn test_no_echo_mode_complex_pipelines() {
     // Test no echo mode with stderr piping
     let output = cmd!("sh", "-c", "echo 'error_msg' >&2")
-        .pipe_stderr(cmd!("tr", "[:lower:]", "[:upper:]"))
+        .pipe_err(cmd!("tr", "[:lower:]", "[:upper:]"))
         .no_echo()
         .output()
         .unwrap();
@@ -131,7 +131,7 @@ fn test_no_echo_mode_complex_pipelines() {
 
     // Test no echo mode with mixed pipe modes
     let output = cmd!("sh", "-c", "echo 'out'; echo 'err' >&2")
-        .pipe_both(cmd!("sort"))
+        .pipe_out_err(cmd!("sort"))
         .no_echo()
         .output()
         .unwrap();

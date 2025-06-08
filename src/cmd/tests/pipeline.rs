@@ -43,11 +43,11 @@ fn test_multiple_pipes() {
 
 /// Tests stderr piping to the next command
 #[test]
-fn test_pipe_stderr() {
+fn test_pipe_err() {
     // Test piping stderr to next command
     // First command generates stderr, second command should receive it
     let output = cmd!("sh", "-c", "echo 'error message' >&2")
-        .pipe_stderr(cmd!("wc", "-c"))
+        .pipe_err(cmd!("wc", "-c"))
         .no_echo()
         .output()
         .unwrap();
@@ -58,10 +58,10 @@ fn test_pipe_stderr() {
 
 /// Tests piping both stdout and stderr
 #[test]
-fn test_pipe_both() {
+fn test_pipe_out_err() {
     // Test piping both stdout and stderr
     let output = cmd!("sh", "-c", "echo 'stdout' && echo 'stderr' >&2")
-        .pipe_both(cmd!("sort"))
+        .pipe_out_err(cmd!("sort"))
         .no_echo()
         .output()
         .unwrap();
@@ -83,17 +83,17 @@ fn test_default_pipe_mode() {
     assert_eq!(pipeline.connections[1].1, PipeMode::Stdout);
 }
 
-/// Tests that pipe_stderr() creates stderr pipe mode
+/// Tests that pipe_err() creates stderr pipe mode
 #[test]
-fn test_pipe_stderr_mode() {
-    let pipeline = cmd!("echo", "test").pipe_stderr(cmd!("cat"));
+fn test_pipe_err_mode() {
+    let pipeline = cmd!("echo", "test").pipe_err(cmd!("cat"));
     assert_eq!(pipeline.connections[1].1, PipeMode::Stderr);
 }
 
-/// Tests that pipe_both() creates both pipe mode
+/// Tests that pipe_out_err() creates both pipe mode
 #[test]
-fn test_pipe_both_mode() {
-    let pipeline = cmd!("echo", "test").pipe_both(cmd!("cat"));
+fn test_pipe_out_err_mode() {
+    let pipeline = cmd!("echo", "test").pipe_out_err(cmd!("cat"));
     assert_eq!(pipeline.connections[1].1, PipeMode::Both);
 }
 
@@ -110,7 +110,7 @@ fn test_direct_pipe_methods() {
 
     // Test stderr piping
     let stderr_result = cmd!("sh", "-c", "echo 'native error' >&2")
-        .pipe_stderr(cmd!("wc", "-c"))
+        .pipe_err(cmd!("wc", "-c"))
         .no_echo()
         .output()
         .unwrap();
@@ -118,7 +118,7 @@ fn test_direct_pipe_methods() {
 
     // Test both piping
     let both_result = cmd!("sh", "-c", "echo 'out'; echo 'err' >&2")
-        .pipe_both(cmd!("wc", "-l"))
+        .pipe_out_err(cmd!("wc", "-l"))
         .no_echo()
         .output()
         .unwrap();
@@ -129,9 +129,9 @@ fn test_direct_pipe_methods() {
 #[test]
 fn test_complex_mixed_pipeline() {
     let output = cmd!("sh", "-c", "echo 'normal output'; echo 'error output' >&2")
-        .pipe_stderr(cmd!("sed", "s/error/processed_error/"))
+        .pipe_err(cmd!("sed", "s/error/processed_error/"))
         .pipe(cmd!("tr", "[:lower:]", "[:upper:]"))
-        .pipe_both(cmd!("sort"))
+        .pipe_out_err(cmd!("sort"))
         .no_echo()
         .output()
         .unwrap();
@@ -146,7 +146,7 @@ fn test_complex_mixed_pipeline() {
 fn test_mixed_pipe_modes() {
     // Create a pipeline that uses different pipe modes between different commands
     let output = cmd!("sh", "-c", "echo 'stdout line'; echo 'stderr line' >&2")
-        .pipe_stderr(cmd!(
+        .pipe_err(cmd!(
             "sh",
             "-c",
             "read line; echo \"processed: $line\"; echo \"more stderr\" >&2"
@@ -165,7 +165,7 @@ fn test_mixed_pipe_modes() {
 #[test]
 fn test_mixed_stderr_to_stdout_pipeline() {
     let output = cmd!("sh", "-c", "echo 'error message' >&2")
-        .pipe_stderr(cmd!("wc", "-c")) // stderr → stdout (character count)
+        .pipe_err(cmd!("wc", "-c")) // stderr → stdout (character count)
         .pipe(cmd!("cat")) // stdout → stdout (pass through)
         .no_echo()
         .output()
@@ -184,8 +184,8 @@ fn test_stdout_stderr_both_sequence() {
             "-c",
             "read input; echo \"$input\"; echo \"error: $input\" >&2"
         ))
-        .pipe_stderr(cmd!("sed", "s/^/ERR: /"))
-        .pipe_both(cmd!("wc", "-l"))
+        .pipe_err(cmd!("sed", "s/^/ERR: /"))
+        .pipe_out_err(cmd!("wc", "-l"))
         .no_echo()
         .output()
         .unwrap();
@@ -198,7 +198,7 @@ fn test_stdout_stderr_both_sequence() {
 #[test]
 fn test_alternating_pipe_modes() {
     let output = cmd!("sh", "-c", "echo 'line1'; echo 'err1' >&2")
-        .pipe_stderr(cmd!("tr", "[:lower:]", "[:upper:]"))
+        .pipe_err(cmd!("tr", "[:lower:]", "[:upper:]"))
         .no_echo()
         .output()
         .unwrap();
@@ -217,9 +217,9 @@ fn test_long_mixed_pipeline() {
             "-c",
             "read input; echo \"$input-processed\"; echo \"warning\" >&2"
         ))
-        .pipe_stderr(cmd!("wc", "-c"))
+        .pipe_err(cmd!("wc", "-c"))
         .pipe(cmd!("sh", "-c", "read count; echo \"chars: $count\""))
-        .pipe_both(cmd!("wc", "-w"))
+        .pipe_out_err(cmd!("wc", "-w"))
         .no_echo()
         .output()
         .unwrap();
@@ -267,12 +267,12 @@ fn test_very_long_pipeline() {
 #[test]
 fn test_pipe_mode_combinations() {
     let output = cmd!("sh", "-c", "echo 'out1'; echo 'err1' >&2")
-        .pipe_stderr(cmd!(
+        .pipe_err(cmd!(
             "sh",
             "-c",
             "read line; echo \"stderr_to_stdout: $line\"; echo 'err2' >&2"
         ))
-        .pipe_both(cmd!(
+        .pipe_out_err(cmd!(
             "sh",
             "-c",
             "while read line; do echo \"combined: $line\"; done"
@@ -356,7 +356,7 @@ fn test_pipeline_data_flow() {
 fn test_stderr_pipe_data_integrity() {
     // Generate specific stderr content and verify it's processed correctly
     let output = cmd!("sh", "-c", "echo 'ERROR: file not found' >&2")
-        .pipe_stderr(cmd!("sed", "s/ERROR:/WARNING:/"))
+        .pipe_err(cmd!("sed", "s/ERROR:/WARNING:/"))
         .pipe(cmd!("tr", "[:lower:]", "[:upper:]"))
         .no_echo()
         .output()
@@ -366,7 +366,7 @@ fn test_stderr_pipe_data_integrity() {
 
     // Test stderr character counting precision
     let output = cmd!("sh", "-c", "printf 'exactly25characters123' >&2")
-        .pipe_stderr(cmd!("wc", "-c"))
+        .pipe_err(cmd!("wc", "-c"))
         .no_echo()
         .output()
         .unwrap();
@@ -374,12 +374,12 @@ fn test_stderr_pipe_data_integrity() {
     assert_eq!(output.trim(), "22"); // "exactly25characters123" is 22 characters
 }
 
-/// Tests pipe_both mode with mixed output verification
+/// Tests pipe_out_err mode with mixed output verification
 #[test]
-fn test_pipe_both_mixed_output() {
+fn test_pipe_out_err_mixed_output() {
     // Generate both stdout and stderr with identifiable content
     let output = cmd!("sh", "-c", "echo 'OUT:message1'; echo 'ERR:message2' >&2")
-        .pipe_both(cmd!("sort")) // Sort both outputs together
+        .pipe_out_err(cmd!("sort")) // Sort both outputs together
         .no_echo()
         .output()
         .unwrap();
