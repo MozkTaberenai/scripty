@@ -71,7 +71,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-
     - name: Run clippy
-      run: cargo xtask precommit
+      run: cargo clippy --all-targets --all-features -- -D warnings
 
   examples:
     name: Examples
@@ -90,24 +90,12 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ runner.os }}-cargo-
-    - name: Run hello_world example
-      run: cargo run --example hello_world
-    - name: Run simple_commands example
-      run: cargo run --example simple_commands
-    - name: Run simple_fs example
-      run: cargo run --example simple_fs
-    - name: Run simple_pipes example
-      run: cargo run --example simple_pipes
-    - name: Run error_handling example
-      run: cargo run --example error_handling
-    - name: Run environment example
-      run: cargo run --example environment
-    - name: Run complex_pipes example
-      run: cargo run --example complex_pipes
-    - name: Run pipe_modes example
-      run: cargo run --example pipe_modes
-    - name: Run mixed_pipe_modes example
-      run: cargo run --example mixed_pipe_modes
+    - name: Run 01_simple_pipes example
+      run: cargo run --example 01_simple_pipes
+    - name: Run 02_pipe_modes example
+      run: cargo run --example 02_pipe_modes
+    - name: Run 03_io_patterns example
+      run: cargo run --example 03_io_patterns
 
   docs:
     name: Documentation
@@ -131,7 +119,7 @@ jobs:
     - name: Check documentation
       run: cargo doc --no-deps --document-private-items --all-features
     - name: Generate README
-      run: cargo xtask readme
+      run: cargo readme
 
   msrv:
     name: MSRV (1.87.0)
