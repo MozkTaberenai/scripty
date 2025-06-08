@@ -230,7 +230,7 @@ fn run_examples(project_root: &std::path::Path, verbose: bool) -> Result<()> {
     }
 
     if !verbose {
-        println!("✅ All examples ran successfully!");
+        println!("✅ All examples run successfully!");
     }
     Ok(())
 }
