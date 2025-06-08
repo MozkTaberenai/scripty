@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 use scripty::*;
+use std::fs::File;
+use std::io::BufWriter;
 use std::path::PathBuf;
 use toml::Value;
 
@@ -64,8 +66,6 @@ fn main() -> Result<()> {
 }
 
 fn sync_version(verbose: bool) -> Result<()> {
-    use std::fs;
-
     let project_root = get_project_root()?;
 
     // Read version from Cargo.toml
@@ -83,15 +83,6 @@ fn sync_version(verbose: bool) -> Result<()> {
         println!("✅ Updated src/lib.rs documentation");
     }
 
-    // Generate updated README
-    if !verbose {
-        println!("📝 Regenerating README.md...");
-    }
-    cmd!("cargo", "readme").current_dir(&project_root).run()?;
-    if !verbose {
-        println!("✅ README.md updated!");
-    }
-
     if !verbose {
         println!("🎉 Version {} synced to documentation!", version);
     }
@@ -100,8 +91,6 @@ fn sync_version(verbose: bool) -> Result<()> {
 }
 
 fn read_version_from_cargo_toml(project_root: &std::path::Path) -> Result<String> {
-    use std::fs;
-
     let cargo_toml_path = project_root.join("Cargo.toml");
     let content = fs::read_to_string(&cargo_toml_path)?;
     let parsed: Value = toml::from_str(&content)?;
@@ -142,28 +131,18 @@ fn update_version_in_documentation(content: &str, new_version: &str) -> String {
     updated_lines.join("\n")
 }
 
-fn run_precommit(verbose: bool) -> Result<()> {
+fn run_format(project_root: &std::path::Path, verbose: bool) -> Result<()> {
     if !verbose {
-        println!("🔍 Running pre-commit checks...");
+        println!("🎨 Formatting code...");
     }
-    let project_root = get_project_root()?;
+    cmd!("cargo", "fmt").current_dir(project_root).run()?;
+    if !verbose {
+        println!("✅ Code formatted!");
+    }
+    Ok(())
+}
 
-    // Sync version from Cargo.toml to documentation (includes README generation)
-    if !verbose {
-        println!("🔄 Syncing version...");
-    }
-    sync_version(verbose)?;
-
-    // Run tests
-    if !verbose {
-        println!("🧪 Running tests...");
-    }
-    cmd!("cargo", "test").current_dir(&project_root).run()?;
-    if !verbose {
-        println!("✅ Tests passed!");
-    }
-
-    // Run comprehensive clippy
+fn run_clippy(project_root: &std::path::Path, verbose: bool) -> Result<()> {
     if !verbose {
         println!("📎 Running comprehensive clippy checks...");
     }
@@ -176,20 +155,90 @@ fn run_precommit(verbose: bool) -> Result<()> {
         "-D",
         "warnings"
     )
-    .current_dir(&project_root)
+    .current_dir(project_root)
     .run()?;
     if !verbose {
         println!("✅ Clippy checks passed!");
     }
+    Ok(())
+}
+
+fn run_tests(project_root: &std::path::Path, verbose: bool) -> Result<()> {
+    if !verbose {
+        println!("🧪 Running tests...");
+    }
+    cmd!("cargo", "test").current_dir(project_root).run()?;
+    if !verbose {
+        println!("✅ Tests passed!");
+    }
+    Ok(())
+}
+
+fn run_check(project_root: &std::path::Path, verbose: bool) -> Result<()> {
+    if !verbose {
+        println!("🔍 Running cargo check...");
+    }
+    cmd!("cargo", "check", "--all-targets")
+        .current_dir(project_root)
+        .run()?;
+    if !verbose {
+        println!("✅ Check passed!");
+    }
+    Ok(())
+}
+
+fn run_format_check(project_root: &std::path::Path, verbose: bool) -> Result<()> {
+    if !verbose {
+        println!("🎨 Checking code formatting...");
+    }
+    cmd!("cargo", "fmt", "--check")
+        .current_dir(project_root)
+        .run()?;
+    if !verbose {
+        println!("✅ Format check passed!");
+    }
+    Ok(())
+}
+
+fn generate_readme(project_root: &std::path::Path, verbose: bool) -> Result<()> {
+    if !verbose {
+        println!("📝 Generating README.md...");
+    }
+    let readme_path = project_root.join("README.md");
+    let readme_file = File::create(&readme_path)?;
+    let buf_writer = BufWriter::new(readme_file);
+    cmd!("cargo", "readme")
+        .current_dir(project_root)
+        .write_to(buf_writer)?;
+    if !verbose {
+        println!("✅ README.md generated!");
+    }
+    Ok(())
+}
+
+fn run_precommit(verbose: bool) -> Result<()> {
+    if !verbose {
+        println!("🔍 Running pre-commit checks...");
+    }
+    let project_root = get_project_root()?;
+
+    // Sync version from Cargo.toml to documentation
+    if !verbose {
+        println!("🔄 Syncing version...");
+    }
+    sync_version(verbose)?;
+
+    // Generate README
+    generate_readme(&project_root, verbose)?;
+
+    // Run tests
+    run_tests(&project_root, verbose)?;
+
+    // Run comprehensive clippy
+    run_clippy(&project_root, verbose)?;
 
     // Format code
-    if !verbose {
-        println!("🎨 Formatting code...");
-    }
-    cmd!("cargo", "fmt").current_dir(&project_root).run()?;
-    if !verbose {
-        println!("✅ Code formatted!");
-    }
+    run_format(&project_root, verbose)?;
 
     if !verbose {
         println!("🎉 Pre-commit checks completed successfully!");
@@ -201,75 +250,29 @@ fn run_precommit(verbose: bool) -> Result<()> {
 
 fn run_ci(verbose: bool) -> Result<()> {
     if !verbose {
-        println!("🚀 Running full CI pipeline...");
+        println!("🚀 Running CI checks (validation only)...");
     }
     let project_root = get_project_root()?;
 
-    // Format code first
-    if !verbose {
-        println!("🎨 Formatting code...");
-    }
-    cmd!("cargo", "fmt").current_dir(&project_root).run()?;
-    if !verbose {
-        println!("✅ Code formatted!");
-    }
-
-    // Run static analysis
-    if !verbose {
-        println!("📎 Running clippy lints...");
-    }
-    cmd!(
-        "cargo",
-        "clippy",
-        "--all-targets",
-        "--all-features",
-        "--",
-        "-D",
-        "warnings"
-    )
-    .current_dir(&project_root)
-    .run()?;
-    if !verbose {
-        println!("✅ Clippy checks passed!");
-    }
+    // Check formatting
+    run_format_check(&project_root, verbose)?;
 
     // Check compilation
-    if !verbose {
-        println!("🔍 Running cargo check...");
-    }
-    cmd!("cargo", "check", "--all-targets")
-        .current_dir(&project_root)
-        .run()?;
-    if !verbose {
-        println!("✅ Check passed!");
-    }
+    run_check(&project_root, verbose)?;
+
+    // Run static analysis
+    run_clippy(&project_root, verbose)?;
 
     // Run tests
-    if !verbose {
-        println!("🧪 Running tests...");
-    }
-    cmd!("cargo", "test").current_dir(&project_root).run()?;
-    if !verbose {
-        println!("✅ Tests passed!");
-    }
-
-    // Generate documentation
-    if !verbose {
-        println!("📝 Generating README.md...");
-    }
-    cmd!("cargo", "readme").current_dir(&project_root).run()?;
-    if !verbose {
-        println!("✅ README.md updated!");
-    }
+    run_tests(&project_root, verbose)?;
 
     if !verbose {
-        println!("🎉 All CI tasks completed successfully!");
+        println!("🎉 All CI checks completed successfully!");
         println!("🔍 Summary:");
-        println!("  ✅ Code formatting");
-        println!("  ✅ Clippy lints");
+        println!("  ✅ Format check");
         println!("  ✅ Compilation check");
+        println!("  ✅ Clippy lints");
         println!("  ✅ Test suite");
-        println!("  ✅ README generation");
     }
 
     Ok(())

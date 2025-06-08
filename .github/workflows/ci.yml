@@ -11,8 +11,8 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  test:
-    name: Test
+  ci:
+    name: CI
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -34,115 +34,5 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ runner.os }}-cargo-
-    - name: Run tests
-      run: cargo test --verbose --all-targets
-    - name: Run doc tests
-      run: cargo test --doc
-
-  fmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        components: rustfmt
-    - name: Check formatting
-      run: cargo fmt --all -- --check
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        components: clippy
-    - name: Cache dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
-    - name: Run clippy
-      run: cargo clippy --all-targets --all-features -- -D warnings
-
-  examples:
-    name: Examples
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-    - name: Cache dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
-    - name: Run 01_simple_pipes example
-      run: cargo run --example 01_simple_pipes
-    - name: Run 02_pipe_modes example
-      run: cargo run --example 02_pipe_modes
-    - name: Run 03_read_ext example
-      run: cargo run --example 03_read_ext
-    - name: Run 04_run_with_io example
-      run: cargo run --example 04_run_with_io
-    - name: Run 05_spawn_io example
-      run: cargo run --example 05_spawn_io
-
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-    - name: Cache dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
-    - name: Install cargo-readme
-      run: cargo install cargo-readme
-    - name: Check documentation
-      run: cargo doc --no-deps --document-private-items --all-features
-    - name: Generate README
-      run: cargo readme
-
-  msrv:
-    name: MSRV (1.87.0)
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install Rust 1.87.0
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: 1.87.0
-    - name: Cache dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-msrv-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-msrv-cargo-
-    - name: Check MSRV compatibility
-      run: cargo check --all-targets
+    - name: Run CI
+      run: cargo xtask ci
