@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Nothing yet
 
+## [0.3.1] - 2025-06-08
+
+### Changed
+- Command echo prefix from "cmd" to "{package_name}:cmd" using `CARGO_PKG_NAME` for better tool identification
+- File system operation echo prefix from "fs" to "{package_name}:fs" using `CARGO_PKG_NAME` for better tool identification
+
 ## [0.3.0] - 2025-06-08
 
 ### Added
