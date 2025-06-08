@@ -94,8 +94,12 @@ jobs:
       run: cargo run --example 01_simple_pipes
     - name: Run 02_pipe_modes example
       run: cargo run --example 02_pipe_modes
-    - name: Run 03_io_patterns example
-      run: cargo run --example 03_io_patterns
+    - name: Run 03_read_ext example
+      run: cargo run --example 03_read_ext
+    - name: Run 04_run_with_io example
+      run: cargo run --example 04_run_with_io
+    - name: Run 05_spawn_io example
+      run: cargo run --example 05_spawn_io
 
   docs:
     name: Documentation
