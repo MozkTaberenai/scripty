@@ -41,8 +41,8 @@ pub struct Cmd {
 /// to use it directly. Instead, use the convenient builder methods on `Cmd`:
 ///
 /// - `pipe(cmd)` - pipes stdout (default)
-/// - `pipe_stderr(cmd)` - pipes stderr only
-/// - `pipe_both(cmd)` - pipes both stdout and stderr combined
+/// - `pipe_err(cmd)` - pipes stderr only
+/// - `pipe_out_err(cmd)` - pipes both stdout and stderr combined
 ///
 /// # Examples
 ///
@@ -56,17 +56,17 @@ pub struct Cmd {
 ///
 /// // Pipe stderr between commands
 /// let output = cmd!("command-with-errors")
-///     .pipe_stderr(cmd!("grep", "ERROR"))
+///     .pipe_err(cmd!("grep", "ERROR"))
 ///     .output()?;
 ///
 /// // Pipe both stdout and stderr
 /// let output = cmd!("command-with-mixed-output")
-///     .pipe_both(cmd!("sort"))
+///     .pipe_out_err(cmd!("sort"))
 ///     .output()?;
 ///
 /// // Mixed pipe modes in one pipeline
 /// let output = cmd!("sh", "-c", "echo 'out'; echo 'err' >&2")
-///     .pipe_stderr(cmd!("process-errors"))
+///     .pipe_err(cmd!("process-errors"))
 ///     .pipe(cmd!("process-output"))
 ///     .output()?;
 /// # Ok::<(), Box<dyn std::error::Error>>(())

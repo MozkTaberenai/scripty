@@ -38,7 +38,7 @@
 //!
 //! ## Requirements
 //!
-//! - **Rust 1.87.0 or later** - Required for native pipeline performance with `std::io::pipe`
+//! - **Rust 1.87.0 or later** - Uses native `std::io::pipe` for optimal pipeline performance
 //!
 //! ## Basic Usage
 //!
@@ -68,7 +68,7 @@
 //!
 //! ### Command Piping
 //!
-//! Chain commands together just like in shell scripts. **New in Rust 1.87.0**: scripty now uses native `std::io::pipe` for enhanced performance and memory efficiency!
+//! Chain commands together just like in shell scripts using native `std::io::pipe` for enhanced performance and memory efficiency!
 //!
 //! ```no_run
 //! use scripty::*;
@@ -80,21 +80,21 @@
 //!
 //! // Pipe stderr
 //! cmd!("some-command")
-//!     .pipe_stderr(cmd!("grep", "ERROR"))
+//!     .pipe_err(cmd!("grep", "ERROR"))
 //!     .run()?;
 //!
 //! // Pipe both stdout and stderr
 //! cmd!("some-command")
-//!     .pipe_both(cmd!("sort"))
+//!     .pipe_out_err(cmd!("sort"))
 //!     .run()?;
 //!
-//! // Multiple pipes - now using efficient native pipes!
+//! // Multiple pipes using efficient native pipes
 //! cmd!("cat", "/etc/passwd")
 //!     .pipe(cmd!("grep", "bash"))
 //!     .pipe(cmd!("wc", "-l"))
 //!     .run()?;
 //!
-//! // Get piped output with streaming processing
+//! // Get piped output with efficient streaming
 //! let result = cmd!("ps", "aux")
 //!     .pipe(cmd!("grep", "rust"))
 //!     .pipe(cmd!("wc", "-l"))
@@ -103,7 +103,7 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
-//! #### Pipeline Performance Improvements (Rust 1.87.0+)
+//! #### Pipeline Performance Features
 //!
 //! - **Memory efficient**: Uses streaming instead of buffering all data
 //! - **Better performance**: Native pipes reduce process overhead
@@ -225,7 +225,7 @@
 //! use std::thread;
 //!
 //! // Full I/O control
-//! let spawn = cmd!("sort").spawn_with_io()?;
+//! let spawn = cmd!("sort").spawn_io_all()?;
 //!
 //! // Handle input in separate thread
 //! if let Some(mut stdin) = spawn.stdin {
@@ -341,7 +341,7 @@
 //!
 //! #### Performance Optimization
 //!
-//! scripty's native pipeline implementation (Rust 1.87.0+) provides significant performance benefits:
+//! scripty's native pipeline implementation provides significant performance benefits:
 //!
 //! ```no_run
 //! use scripty::*;

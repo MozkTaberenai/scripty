@@ -10,6 +10,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Nothing yet
 
+## [0.2.0] - 2025-01-01
+
+### Added
+- Complete I/O pattern analysis and mathematical coverage (2³ = 8 patterns)
+- New standardized `spawn_io_*` methods for all I/O control scenarios:
+  - `spawn_io_in()` - stdin only (Pattern 100)
+  - `spawn_io_out()` - stdout only (Pattern 010)  
+  - `spawn_io_err()` - stderr only (Pattern 001)
+  - `spawn_io_in_out()` - stdin + stdout (Pattern 110) - Interactive processing
+  - `spawn_io_in_err()` - stdin + stderr (Pattern 101) - Debug scenarios
+  - `spawn_io_out_err()` - stdout + stderr (Pattern 011)
+  - `spawn_io_all()` - complete control (Pattern 111)
+
+### Changed
+- Standardized pipe operation naming for consistency:
+  - Simplified `pipe_stderr()` → `pipe_err()` 
+  - Simplified `pipe_both()` → `pipe_out_err()`
+- Updated example `03_io_patterns.rs` to demonstrate all 8 I/O patterns with practical use cases
+- Renamed test file from `input_output.rs` to `io_patterns.rs` for clarity
+- Updated test function names to match new API naming conventions
+- Removed version-specific references from documentation (Rust 1.87.0+ notes) since it's now the MSRV
+
+### Fixed
+- Resolved all clippy warnings with appropriate safety considerations
+- Improved code quality and consistency across examples and tests
+
+### Deprecated
+- `pipe_stderr()` method (use `pipe_err()` instead)
+- `pipe_both()` method (use `pipe_out_err()` instead)
+
 ## [0.1.0] - 2025-06-08
 
 ### Added

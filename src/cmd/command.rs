@@ -90,8 +90,22 @@ impl Cmd {
         self
     }
 
-    /// Pipe this command to another command.
-    pub fn pipe(self, next: Cmd) -> Pipeline {
+    /// Pipe this command's stdout to another command's stdin.
+    ///
+    /// This is the standard Unix pipe behavior where stdout becomes stdin.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use scripty::cmd;
+    ///
+    /// // Standard pipe (stdout → stdin)
+    /// let output = cmd!("echo", "hello")
+    ///     .pipe_out(cmd!("tr", "[:lower:]", "[:upper:]"))
+    ///     .output()?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn pipe_out(self, next: Cmd) -> Pipeline {
         let suppress_echo = self.suppress_echo || next.suppress_echo;
         Pipeline {
             connections: vec![(self, PipeMode::Stdout), (next, PipeMode::Stdout)],
@@ -100,10 +114,18 @@ impl Cmd {
         }
     }
 
+    /// Pipe this command to another command (alias for pipe_out).
+    ///
+    /// This is an alias for `pipe_out()` to maintain backward compatibility.
+    /// Uses the standard Unix pipe behavior where stdout becomes stdin.
+    pub fn pipe(self, next: Cmd) -> Pipeline {
+        self.pipe_out(next)
+    }
+
     /// Pipe this command's stderr to another command's stdin.
     ///
-    /// This is a convenience method that creates a pipeline with PipeMode::Stderr,
-    /// allowing you to specify the pipe mode directly in the builder pattern.
+    /// This pipes the error output stream to the next command's input,
+    /// useful for error processing and filtering workflows.
     ///
     /// # Examples
     ///
@@ -112,11 +134,11 @@ impl Cmd {
     ///
     /// // Process error messages through a pipeline
     /// let error_count = cmd!("sh", "-c", "echo 'ERROR: failed' >&2")
-    ///     .pipe_stderr(cmd!("wc", "-l"))
+    ///     .pipe_err(cmd!("wc", "-l"))
     ///     .output()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn pipe_stderr(self, next: Cmd) -> Pipeline {
+    pub fn pipe_err(self, next: Cmd) -> Pipeline {
         let suppress_echo = self.suppress_echo || next.suppress_echo;
         Pipeline {
             connections: vec![(self, PipeMode::Stdout), (next, PipeMode::Stderr)],
@@ -127,8 +149,8 @@ impl Cmd {
 
     /// Pipe this command's combined stdout and stderr to another command's stdin.
     ///
-    /// This is a convenience method that creates a pipeline with PipeMode::Both,
-    /// allowing you to specify the pipe mode directly in the builder pattern.
+    /// This merges both output streams and pipes them to the next command,
+    /// useful for unified processing of all command output.
     ///
     /// # Examples
     ///
@@ -137,11 +159,11 @@ impl Cmd {
     ///
     /// // Sort all output (both stdout and stderr)
     /// let sorted_output = cmd!("sh", "-c", "echo 'out'; echo 'err' >&2")
-    ///     .pipe_both(cmd!("sort"))
+    ///     .pipe_out_err(cmd!("sort"))
     ///     .output()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn pipe_both(self, next: Cmd) -> Pipeline {
+    pub fn pipe_out_err(self, next: Cmd) -> Pipeline {
         let suppress_echo = self.suppress_echo || next.suppress_echo;
         Pipeline {
             connections: vec![(self, PipeMode::Stdout), (next, PipeMode::Both)],
@@ -181,34 +203,62 @@ impl Cmd {
         self.into_pipeline().run_with_io(reader, writer)
     }
 
-    /// Spawn the command with I/O control.
-    pub fn spawn_with_io(self) -> Result<PipelineSpawn, Error> {
-        self.into_pipeline().spawn_with_io()
+    /// Spawn the command with full I/O control.
+    pub fn spawn_io_all(self) -> Result<PipelineSpawn, Error> {
+        self.into_pipeline().spawn_io_all()
     }
 
     /// Spawn the command with stdin control.
-    pub fn spawn_with_stdin(
-        self,
-    ) -> Result<(PipelineHandle, Option<std::process::ChildStdin>), Error> {
-        self.into_pipeline().spawn_with_stdin()
+    pub fn spawn_io_in(self) -> Result<(PipelineHandle, Option<std::process::ChildStdin>), Error> {
+        self.into_pipeline().spawn_io_in()
     }
 
     /// Spawn the command with stdout control.
-    pub fn spawn_with_stdout(
+    pub fn spawn_io_out(
         self,
     ) -> Result<(PipelineHandle, Option<std::process::ChildStdout>), Error> {
-        self.into_pipeline().spawn_with_stdout()
+        self.into_pipeline().spawn_io_out()
     }
 
     /// Spawn the command with stderr control.
-    pub fn spawn_with_stderr(
+    pub fn spawn_io_err(
         self,
     ) -> Result<(PipelineHandle, Option<std::process::ChildStderr>), Error> {
-        self.into_pipeline().spawn_with_stderr()
+        self.into_pipeline().spawn_io_err()
     }
 
-    /// Spawn the command with both stdout and stderr control.
-    pub fn spawn_with_both(
+    /// Spawn the command with stdin and stdout control.
+    /// This is the most common interactive pattern for data transformation and interactive tools.
+    pub fn spawn_io_in_out(
+        self,
+    ) -> Result<
+        (
+            PipelineHandle,
+            Option<std::process::ChildStdin>,
+            Option<std::process::ChildStdout>,
+        ),
+        Error,
+    > {
+        self.into_pipeline().spawn_io_in_out()
+    }
+
+    /// Spawn the command with stdin and stderr control.
+    /// Useful for debugging scenarios where you need to send data and monitor errors.
+    pub fn spawn_io_in_err(
+        self,
+    ) -> Result<
+        (
+            PipelineHandle,
+            Option<std::process::ChildStdin>,
+            Option<std::process::ChildStderr>,
+        ),
+        Error,
+    > {
+        self.into_pipeline().spawn_io_in_err()
+    }
+
+    /// Spawn the command with stdout and stderr control.
+    pub fn spawn_io_out_err(
         self,
     ) -> Result<
         (
@@ -218,7 +268,7 @@ impl Cmd {
         ),
         Error,
     > {
-        self.into_pipeline().spawn_with_both()
+        self.into_pipeline().spawn_io_out_err()
     }
 
     /// Quotes an argument for display if it contains characters that affect readability.  

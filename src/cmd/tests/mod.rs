@@ -10,7 +10,7 @@ use super::*;
 mod basic;
 mod environment;
 mod error_handling;
-mod input_output;
+mod io_patterns;
 
 mod no_echo;
 mod pipeline;

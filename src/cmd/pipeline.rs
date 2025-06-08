@@ -65,20 +65,25 @@ impl PipelineHandle {
 }
 
 impl Pipeline {
-    /// Add another command to the pipeline.
-    pub fn pipe(mut self, cmd: Cmd) -> Self {
+    /// Add another command to the pipeline, piping stdout.
+    pub fn pipe_out(mut self, cmd: Cmd) -> Self {
         self.connections.push((cmd, PipeMode::Stdout));
         self
     }
 
+    /// Add another command to the pipeline (alias for pipe_out).
+    pub fn pipe(self, cmd: Cmd) -> Self {
+        self.pipe_out(cmd)
+    }
+
     /// Add another command to the pipeline, piping stderr.
-    pub fn pipe_stderr(mut self, cmd: Cmd) -> Self {
+    pub fn pipe_err(mut self, cmd: Cmd) -> Self {
         self.connections.push((cmd, PipeMode::Stderr));
         self
     }
 
     /// Add another command to the pipeline, piping both stdout and stderr.
-    pub fn pipe_both(mut self, cmd: Cmd) -> Self {
+    pub fn pipe_out_err(mut self, cmd: Cmd) -> Self {
         self.connections.push((cmd, PipeMode::Both));
         self
     }
@@ -104,8 +109,8 @@ impl Pipeline {
         self
     }
 
-    /// Set input from a Reader (deprecated: use spawn_with_stdin for more control).
-    /// Note: This will cause an error with output() - use spawn_with_* methods instead.
+    /// Set input from a Reader (deprecated: use spawn_io_in for more control).
+    /// Note: This will cause an error with output() - use spawn_io_* methods instead.
     /// For large files, consider wrapping the reader with `BufReader` first.
     pub fn input_reader<R: Read + Send + 'static>(mut self, reader: R) -> Self {
         self.input = Some(CmdInput::Reader(Box::new(reader)));
@@ -137,7 +142,7 @@ impl Pipeline {
 
     /// Spawn pipeline with full I/O access.
     /// User is responsible for managing stdin, stdout, and stderr in separate threads.
-    pub fn spawn_with_io(self) -> Result<PipelineSpawn, Error> {
+    pub fn spawn_io_all(self) -> Result<PipelineSpawn, Error> {
         if !self.suppress_echo {
             self.echo_pipeline();
         }
@@ -279,31 +284,254 @@ impl Pipeline {
     }
 
     /// Spawn pipeline with stdin access only.
-    pub fn spawn_with_stdin(
-        self,
-    ) -> Result<(PipelineHandle, Option<std::process::ChildStdin>), Error> {
-        let spawn = self.spawn_with_io()?;
+    pub fn spawn_io_in(self) -> Result<(PipelineHandle, Option<std::process::ChildStdin>), Error> {
+        if !self.suppress_echo {
+            self.echo_pipeline();
+        }
+
+        if self.connections.is_empty() {
+            return Ok((
+                PipelineHandle {
+                    children: Vec::new(),
+                },
+                None,
+            ));
+        }
+
+        // For single command, handle specially to avoid stdin hanging
+        if self.connections.len() == 1 {
+            let cmd = self.connections.into_iter().next().unwrap().0;
+            let mut std_cmd = Self::build_std_command_static(&cmd);
+
+            // Only set up stdin as piped - let stdout/stderr inherit
+            std_cmd.stdin(Stdio::piped());
+
+            let mut child = std_cmd.spawn().map_err(|e| Error {
+                message: format!("Failed to spawn command: {}", cmd.program.to_string_lossy()),
+                source: Some(e),
+            })?;
+
+            let stdin = child.stdin.take();
+
+            return Ok((
+                PipelineHandle {
+                    children: vec![child],
+                },
+                stdin,
+            ));
+        }
+
+        // For multi-command pipelines, use full spawn_io_all
+        let spawn = self.spawn_io_all()?;
         Ok((spawn.handle, spawn.stdin))
     }
 
+    /// Spawn pipeline with stdin and stdout access.
+    /// This is the most common interactive pattern for data transformation and interactive tools.
+    pub fn spawn_io_in_out(
+        self,
+    ) -> Result<
+        (
+            PipelineHandle,
+            Option<std::process::ChildStdin>,
+            Option<std::process::ChildStdout>,
+        ),
+        Error,
+    > {
+        if !self.suppress_echo {
+            self.echo_pipeline();
+        }
+
+        if self.connections.is_empty() {
+            return Ok((
+                PipelineHandle {
+                    children: Vec::new(),
+                },
+                None,
+                None,
+            ));
+        }
+
+        // For single command, handle specially to avoid stderr hanging
+        if self.connections.len() == 1 {
+            let cmd = self.connections.into_iter().next().unwrap().0;
+            let mut std_cmd = Self::build_std_command_static(&cmd);
+
+            // Only set up stdin and stdout as piped - let stderr inherit
+            std_cmd.stdin(Stdio::piped());
+            std_cmd.stdout(Stdio::piped());
+
+            let mut child = std_cmd.spawn().map_err(|e| Error {
+                message: format!("Failed to spawn command: {}", cmd.program.to_string_lossy()),
+                source: Some(e),
+            })?;
+
+            let stdin = child.stdin.take();
+            let stdout = child.stdout.take();
+
+            return Ok((
+                PipelineHandle {
+                    children: vec![child],
+                },
+                stdin,
+                stdout,
+            ));
+        }
+
+        // For multi-command pipelines, use full spawn_io_all
+        let spawn = self.spawn_io_all()?;
+        Ok((spawn.handle, spawn.stdin, spawn.stdout))
+    }
+
+    /// Spawn pipeline with stdin and stderr access.
+    /// Useful for debugging scenarios where you need to send data and monitor errors.
+    pub fn spawn_io_in_err(
+        self,
+    ) -> Result<
+        (
+            PipelineHandle,
+            Option<std::process::ChildStdin>,
+            Option<std::process::ChildStderr>,
+        ),
+        Error,
+    > {
+        if !self.suppress_echo {
+            self.echo_pipeline();
+        }
+
+        if self.connections.is_empty() {
+            return Ok((
+                PipelineHandle {
+                    children: Vec::new(),
+                },
+                None,
+                None,
+            ));
+        }
+
+        // For single command, handle specially to avoid stdout hanging
+        if self.connections.len() == 1 {
+            let cmd = self.connections.into_iter().next().unwrap().0;
+            let mut std_cmd = Self::build_std_command_static(&cmd);
+
+            // Only set up stdin and stderr as piped - let stdout inherit
+            std_cmd.stdin(Stdio::piped());
+            std_cmd.stderr(Stdio::piped());
+
+            let mut child = std_cmd.spawn().map_err(|e| Error {
+                message: format!("Failed to spawn command: {}", cmd.program.to_string_lossy()),
+                source: Some(e),
+            })?;
+
+            let stdin = child.stdin.take();
+            let stderr = child.stderr.take();
+
+            return Ok((
+                PipelineHandle {
+                    children: vec![child],
+                },
+                stdin,
+                stderr,
+            ));
+        }
+
+        // For multi-command pipelines, use full spawn_io_all
+        let spawn = self.spawn_io_all()?;
+        Ok((spawn.handle, spawn.stdin, spawn.stderr))
+    }
+
     /// Spawn pipeline with stdout access only.
-    pub fn spawn_with_stdout(
+    pub fn spawn_io_out(
         self,
     ) -> Result<(PipelineHandle, Option<std::process::ChildStdout>), Error> {
-        let spawn = self.spawn_with_io()?;
+        if !self.suppress_echo {
+            self.echo_pipeline();
+        }
+
+        if self.connections.is_empty() {
+            return Ok((
+                PipelineHandle {
+                    children: Vec::new(),
+                },
+                None,
+            ));
+        }
+
+        // For single command, handle specially to avoid stdin hanging
+        if self.connections.len() == 1 {
+            let cmd = self.connections.into_iter().next().unwrap().0;
+            let mut std_cmd = Self::build_std_command_static(&cmd);
+
+            // Only set up stdout as piped - let stdin/stderr inherit
+            std_cmd.stdout(Stdio::piped());
+
+            let mut child = std_cmd.spawn().map_err(|e| Error {
+                message: format!("Failed to spawn command: {}", cmd.program.to_string_lossy()),
+                source: Some(e),
+            })?;
+
+            let stdout = child.stdout.take();
+
+            return Ok((
+                PipelineHandle {
+                    children: vec![child],
+                },
+                stdout,
+            ));
+        }
+
+        // For multi-command pipelines, use full spawn_io_all
+        let spawn = self.spawn_io_all()?;
         Ok((spawn.handle, spawn.stdout))
     }
 
     /// Spawn pipeline with stderr access only.
-    pub fn spawn_with_stderr(
+    pub fn spawn_io_err(
         self,
     ) -> Result<(PipelineHandle, Option<std::process::ChildStderr>), Error> {
-        let spawn = self.spawn_with_io()?;
+        if !self.suppress_echo {
+            self.echo_pipeline();
+        }
+
+        if self.connections.is_empty() {
+            return Ok((
+                PipelineHandle {
+                    children: Vec::new(),
+                },
+                None,
+            ));
+        }
+
+        // For single command, handle specially to avoid stdin hanging
+        if self.connections.len() == 1 {
+            let cmd = self.connections.into_iter().next().unwrap().0;
+            let mut std_cmd = Self::build_std_command_static(&cmd);
+
+            // Only set up stderr as piped - let stdin/stdout inherit
+            std_cmd.stderr(Stdio::piped());
+
+            let mut child = std_cmd.spawn().map_err(|e| Error {
+                message: format!("Failed to spawn command: {}", cmd.program.to_string_lossy()),
+                source: Some(e),
+            })?;
+
+            let stderr = child.stderr.take();
+
+            return Ok((
+                PipelineHandle {
+                    children: vec![child],
+                },
+                stderr,
+            ));
+        }
+
+        // For multi-command pipelines, use full spawn_io_all
+        let spawn = self.spawn_io_all()?;
         Ok((spawn.handle, spawn.stderr))
     }
 
     /// Spawn pipeline with both stdout and stderr access.
-    pub fn spawn_with_both(
+    pub fn spawn_io_out_err(
         self,
     ) -> Result<
         (
@@ -313,7 +541,48 @@ impl Pipeline {
         ),
         Error,
     > {
-        let spawn = self.spawn_with_io()?;
+        if !self.suppress_echo {
+            self.echo_pipeline();
+        }
+
+        if self.connections.is_empty() {
+            return Ok((
+                PipelineHandle {
+                    children: Vec::new(),
+                },
+                None,
+                None,
+            ));
+        }
+
+        // For single command, handle specially to avoid stdin hanging
+        if self.connections.len() == 1 {
+            let cmd = self.connections.into_iter().next().unwrap().0;
+            let mut std_cmd = Self::build_std_command_static(&cmd);
+
+            // Only set up stdout and stderr as piped - let stdin inherit
+            std_cmd.stdout(Stdio::piped());
+            std_cmd.stderr(Stdio::piped());
+
+            let mut child = std_cmd.spawn().map_err(|e| Error {
+                message: format!("Failed to spawn command: {}", cmd.program.to_string_lossy()),
+                source: Some(e),
+            })?;
+
+            let stdout = child.stdout.take();
+            let stderr = child.stderr.take();
+
+            return Ok((
+                PipelineHandle {
+                    children: vec![child],
+                },
+                stdout,
+                stderr,
+            ));
+        }
+
+        // For multi-command pipelines, use full spawn_io_all
+        let spawn = self.spawn_io_all()?;
         Ok((spawn.handle, spawn.stdout, spawn.stderr))
     }
 
@@ -322,7 +591,7 @@ impl Pipeline {
     pub fn stream_to<W: Write>(mut self, mut writer: W) -> Result<(), Error> {
         // Extract input before spawning
         let input = self.input.take();
-        let spawn = self.spawn_with_io()?;
+        let spawn = self.spawn_io_all()?;
 
         // Handle input in separate thread if provided
         let input_handle = match input {
@@ -368,7 +637,7 @@ impl Pipeline {
         mut reader: R,
         mut writer: W,
     ) -> Result<(), Error> {
-        let spawn = self.spawn_with_io()?;
+        let spawn = self.spawn_io_all()?;
 
         // Handle input in separate thread
         if let Some(mut stdin) = spawn.stdin {
@@ -400,9 +669,9 @@ impl Pipeline {
         // Extract input before moving self
         let input = self.input.take();
 
-        // Call spawn_with_io with echo suppressed to avoid double echo
+        // Call spawn_io_all with echo suppressed to avoid double echo
         self.suppress_echo = true;
-        let spawn = self.spawn_with_io()?;
+        let spawn = self.spawn_io_all()?;
 
         // Handle input if provided (for backward compatibility)
         let input_handle = match input {
