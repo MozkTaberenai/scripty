@@ -76,14 +76,6 @@ impl Cmd {
         self.into_pipeline().input(input)
     }
 
-    /// Set input from a Reader (unbuffered).
-    /// Set input from a Reader.
-    /// Reads all data from the reader into memory.
-    /// For large files, consider wrapping the reader with `BufReader` first.
-    pub fn input_reader<R: Read + Send + 'static>(self, reader: R) -> Pipeline {
-        self.into_pipeline().input_reader(reader)
-    }
-
     /// Run without echoing the command.
     pub fn no_echo(mut self) -> Self {
         self.suppress_echo = true;
@@ -187,10 +179,22 @@ impl Cmd {
         self.into_pipeline().output()
     }
 
-    /// Run the command and stream output to a Writer.
+    /// Stream command's stdout to a Writer.
     /// This is more memory-efficient for large outputs.
-    pub fn stream_to<W: Write>(self, writer: W) -> Result<(), Error> {
-        self.into_pipeline().stream_to(writer)
+    pub fn write_to<W: Write>(self, writer: W) -> Result<(), Error> {
+        self.into_pipeline().write_to(writer)
+    }
+
+    /// Stream command's stderr to a Writer.
+    /// This is useful for capturing error output separately.
+    pub fn write_err_to<W: Write>(self, writer: W) -> Result<(), Error> {
+        self.into_pipeline().write_err_to(writer)
+    }
+
+    /// Stream command's combined stdout and stderr to a Writer.
+    /// This merges both output streams into the writer.
+    pub fn write_both_to<W: Write + Send + 'static>(self, writer: W) -> Result<(), Error> {
+        self.into_pipeline().write_both_to(writer)
     }
 
     /// Run the command with both input Reader and output Writer.
@@ -201,6 +205,26 @@ impl Cmd {
         writer: W,
     ) -> Result<(), Error> {
         self.into_pipeline().run_with_io(reader, writer)
+    }
+
+    /// Run the command with input Reader and stderr Writer.
+    /// This is useful for processing data while capturing error output.
+    pub fn run_with_err_io<R: Read + Send + 'static, W: Write>(
+        self,
+        reader: R,
+        writer: W,
+    ) -> Result<(), Error> {
+        self.into_pipeline().run_with_err_io(reader, writer)
+    }
+
+    /// Run the command with input Reader and combined stdout+stderr Writer.
+    /// This merges both output streams for comprehensive logging.
+    pub fn run_with_both_io<R: Read + Send + 'static, W: Write + Send + 'static>(
+        self,
+        reader: R,
+        writer: W,
+    ) -> Result<(), Error> {
+        self.into_pipeline().run_with_both_io(reader, writer)
     }
 
     /// Spawn the command with full I/O control.

@@ -32,8 +32,14 @@ path = "examples/01_simple_pipes.rs"
 name = "02_pipe_modes"
 path = "examples/02_pipe_modes.rs"
 [[example]]
-name = "03_io_patterns"
-path = "examples/03_io_patterns.rs"
+name = "03_read_ext"
+path = "examples/03_read_ext.rs"
+[[example]]
+name = "04_run_with_io"
+path = "examples/04_run_with_io.rs"
+[[example]]
+name = "05_spawn_io"
+path = "examples/05_spawn_io.rs"
 
 
 [package.metadata.docs.rs]

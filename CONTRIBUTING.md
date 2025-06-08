@@ -1,6 +1,6 @@
 # Contributing to scripty
 
-Thank you for your interest in contributing to scripty! This document provides comprehensive guidelines for both human and AI contributors.
+Thank you for your interest in contributing to scripty! This document provides essential guidelines for development.
 
 ## ⚠️ CRITICAL: Mandatory Pre-Commit Process
 
@@ -12,40 +12,25 @@ cargo xtask precommit
 
 This command runs comprehensive checks (tests + clippy + formatting). **ALL checks must pass** before committing.
 
-## Quick Start for Contributors
+## Quick Start
 
 1. **Fork and clone** the repository
 2. **Install Rust** (latest stable version)
-3. **Run the development setup**:
+3. **Verify setup**:
    ```bash
-   cargo test            # Verify everything works
-   cargo xtask precommit # MANDATORY: Run pre-commit checks
+   cargo test            # Run tests
+   cargo xtask precommit # Pre-commit checks
    ```
 
-## Required Reading
-
-### 1. Project Overview
-- `README.md` - Project description, features, and usage examples
-- `CHANGELOG.md` - Recent changes and version history
-- `Cargo.toml` - Dependencies and project metadata
-
-### 2. Codebase Structure
+## Project Structure
 ```
 scripty/
 ├── src/
 │   ├── lib.rs              # Main documentation (README source)
 │   ├── cmd/                # Command execution functionality
-│   │   ├── mod.rs          # Module entry point
-│   │   ├── command.rs      # Command building and execution
-│   │   ├── error.rs        # Error handling
-│   │   ├── macros.rs       # Convenience macros
-│   │   ├── pipeline.rs     # Pipeline implementation
-│   │   ├── types.rs        # Type definitions
-│   │   └── tests/          # Test suite directory
 │   ├── output.rs           # Output formatting
 │   ├── fs.rs               # File system operations
-│   ├── color.rs            # Color definitions (internal)
-│   └── style.rs            # Style definitions (internal)
+│   └── *.rs                # Supporting modules
 ├── examples/               # Usage examples
 └── xtask/                  # Development task runner
 ```
@@ -91,24 +76,20 @@ scripty/
 **⚠️ DO NOT edit README.md directly!**
 
 - README.md is automatically generated from `src/lib.rs` docstrings
-- To update README.md: edit `src/lib.rs` and run `cargo xtask readme`
+- To update README.md: edit `src/lib.rs` and run `cargo readme`
 
-## Development Tasks
-
-Development tasks can be run with `cargo` directly or via `cargo xtask`:
+## Development Commands
 
 ```bash
-# Direct cargo commands
-cargo test            # Run tests
-cargo clippy --all-targets --all-features -- -D warnings  # Run comprehensive lints
-cargo fmt             # Format code
-cargo check           # Check compilation
-cargo doc --open      # Generate and open documentation
+# Essential commands
+cargo test                                              # Run tests
+cargo clippy --all-targets --all-features -- -D warnings  # Lint code
+cargo fmt                                               # Format code
 
-# xtask commands (project-specific)
-cargo xtask readme    # Generate README.md (after editing src/lib.rs)
-cargo xtask precommit # Run pre-commit checks (test + clippy + fmt)
-cargo xtask ci        # Run full CI pipeline locally
+# Project-specific xtask commands
+cargo readme          # Generate README.md from src/lib.rs
+cargo xtask precommit # Run test + clippy + fmt (includes README generation)
+cargo xtask ci        # Full CI pipeline
 ```
 
 ## Code Quality (MANDATORY)
@@ -134,7 +115,7 @@ git commit -m "fix: apply rustfmt formatting changes"
 cargo fmt -- --check  # MUST show no errors before proceeding
 
 # Step 5: Update README if needed
-cargo xtask readme    # If src/lib.rs docs were changed
+cargo readme    # If src/lib.rs docs were changed
 
 # Step 6: Commit your actual changes
 git add .
@@ -142,20 +123,10 @@ git commit -m "feat: descriptive commit message"
 git push origin feature/branch-name
 ```
 
-### Essential Clippy Commands
-```bash
-# Comprehensive clippy check (RECOMMENDED)
-cargo clippy --all-targets --all-features -- -D warnings
-
-# Individual checks
-cargo clippy --tests -- -D warnings
-cargo clippy --examples -- -D warnings
-```
-
-### Common Clippy Issues
-- `clippy::write_with_newline` - Use `writeln!()` instead of `write!(_, "\n")`
-- `clippy::unwrap_used` - Consider using `?` or proper error handling
-- `clippy::expect_used` - Prefer explicit error handling
+### Code Quality Requirements
+- Fix ALL clippy warnings before committing
+- Use `cargo fmt` for consistent formatting
+- All tests must pass
 
 ## Pull Request Workflow
 
@@ -179,38 +150,13 @@ cargo clippy --examples -- -D warnings
 
 4. **Commit both source and generated files**
 
-### Creating Pull Requests
+### Pull Request Process
 
-**Option 1: GitHub CLI (Preferred):**
-```bash
-# Create PR with title and description
-gh pr create --title "Brief description of changes" \
-  --body "Detailed description:
-- What was changed
-- Why it was changed
-- How to test it
-- Any breaking changes"
-
-# Create draft PR for work in progress
-gh pr create --draft --title "WIP: Feature name"
-```
-
-**Option 2: GitHub Web Interface:**
-- Push branch to origin
-- Visit GitHub repository
-- Click "Compare & pull request"
-- Fill in title and description
-
-### PR Guidelines
-- **Title**: Use conventional commit format (feat:, fix:, docs:, etc.)
-- **Description**: Include what changed, why, testing instructions, breaking changes
-- **Size**: Keep PRs focused and reasonably sized
-- **Tests**: Ensure all tests pass and new functionality is tested
-
-### Merge Strategy
-- **Prefer "Squash and merge"** for clean main branch history
-- **Delete feature branch** after successful merge
-- **Never force push** to shared branches
+1. **Create PR** via GitHub CLI or web interface
+2. **Use conventional commit format** (feat:, fix:, docs:, etc.)
+3. **Include description** of changes and testing instructions
+4. **Ensure all checks pass** before requesting review
+5. **Use "Squash and merge"** to maintain clean history
 
 ## Platform Support
 
@@ -219,20 +165,12 @@ gh pr create --draft --title "WIP: Feature name"
 
 When adding examples, use commands available on Unix systems.
 
-## Code Style
+## Code Standards
 
-- Use `cargo fmt` for formatting (enforced by CI)
-- Follow Rust naming conventions
-- Add documentation for public APIs
+- Follow Rust conventions and use `cargo fmt`
+- Document public APIs with examples
 - Write tests for new functionality
-- **ZERO TOLERANCE**: Fix ALL clippy warnings before committing
-
-## Testing Strategy
-
-- All examples should work on Unix systems
-- Use `.quiet()` in tests to avoid cluttering output
-- Test both native and fallback pipeline implementations
-- Performance examples demonstrate streaming efficiency
+- Examples must work on Unix systems (Linux/macOS)
 
 ## Commit Guidelines
 
@@ -244,61 +182,12 @@ When adding examples, use commands available on Unix systems.
 - **MANDATORY**: Run clippy checks before EVERY commit
 - **PULL REQUEST REQUIRED**: All changes must go through PR review process
 
-## Common Development Tasks
-
-### Add New Feature
-```bash
-git checkout -b feature/new-command-feature
-# Modify src/cmd/mod.rs, add tests to src/cmd/tests.rs, update src/lib.rs docs
-# Run pre-commit checks, commit, push, create PR
-```
-
-### Add Example
-```bash
-git checkout -b docs/add-example
-# Create in examples/, ensure Unix compatibility
-# Run pre-commit checks, commit, push, create PR
-```
-
-### Fix Performance
-```bash
-git checkout -b refactor/improve-performance
-# Focus on pipeline implementation in src/cmd/mod.rs
-# Run pre-commit checks, commit, push, create PR
-```
-
-### Update Documentation
-```bash
-git checkout -b docs/update-documentation
-# Edit src/lib.rs docstring, run cargo xtask readme
-# Run pre-commit checks, commit, push, create PR
-```
-
-### Fix Clippy Warnings
-```bash
-git checkout -b fix/clippy-warnings
-# Run cargo clippy --all-targets --all-features -- -D warnings
-# Fix all warnings, run pre-commit checks, commit, push, create PR
-```
-
-## Recent Important Changes
-
-- Implemented efficient native pipelines using `std::io::pipe` (Rust 1.87.0+)
-- Restructured cmd module into `src/cmd/` directory with separate test file
-- Added automatic fallback for shell-based pipes on older Rust versions
-- Simplified xtask to focus on project-specific tasks only
-
-## AI Agent Specific Instructions
-
-**For AI Agents**: See `.ai-instructions.md` for additional AI-specific guidelines including tool usage, communication style, and code block formatting requirements.
-
 ## Getting Help
 
-- Look at existing code for patterns
-- Ask questions in issues or discussions
-- Review `examples/` directory for usage patterns
+- Review existing code and examples for patterns
+- Ask questions in GitHub issues or discussions
 - Check CHANGELOG.md for recent changes
 
-## Code of Conduct
+---
 
-Be respectful and constructive in all interactions. This project follows the Rust community's standards of inclusive and welcoming behavior.
+Be respectful and constructive in all interactions.

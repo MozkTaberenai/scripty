@@ -31,7 +31,7 @@ Brief description of what this PR does.
   - [ ] Clippy lints (`cargo clippy --all-targets --all-features -- -D warnings`)
   - [ ] Tests (`cargo test --all-targets`)
   - [ ] Documentation builds (`cargo doc`)
-  - [ ] README updated (`cargo xtask readme`)
+  - [ ] README updated (`cargo readme`)
 - [ ] ✅ MSRV compatibility (Rust 1.87.0+)
 - [ ] ✅ Cross-platform compatibility (Linux, macOS)
 

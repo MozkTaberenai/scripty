@@ -109,14 +109,6 @@ impl Pipeline {
         self
     }
 
-    /// Set input from a Reader (deprecated: use spawn_io_in for more control).
-    /// Note: This will cause an error with output() - use spawn_io_* methods instead.
-    /// For large files, consider wrapping the reader with `BufReader` first.
-    pub fn input_reader<R: Read + Send + 'static>(mut self, reader: R) -> Self {
-        self.input = Some(CmdInput::Reader(Box::new(reader)));
-        self
-    }
-
     /// Run without echoing the pipeline.
     pub fn no_echo(mut self) -> Self {
         self.suppress_echo = true;
@@ -586,9 +578,9 @@ impl Pipeline {
         Ok((spawn.handle, spawn.stdout, spawn.stderr))
     }
 
-    /// Run the pipeline and stream output to a Writer.
+    /// Stream pipeline's stdout to a Writer.
     /// This is more memory-efficient for large outputs.
-    pub fn stream_to<W: Write>(mut self, mut writer: W) -> Result<(), Error> {
+    pub fn write_to<W: Write>(mut self, mut writer: W) -> Result<(), Error> {
         // Extract input before spawning
         let input = self.input.take();
         let spawn = self.spawn_io_all()?;
@@ -613,17 +605,130 @@ impl Pipeline {
             None => None,
         };
 
-        // Handle output in current thread
+        // Handle stdout in current thread
         if let Some(stdout) = spawn.stdout {
             use std::io::copy;
             copy(&mut BufReader::new(stdout), &mut writer).map_err(|e| Error {
-                message: "Failed to copy pipeline output to writer".to_string(),
+                message: "Failed to copy pipeline stdout to writer".to_string(),
                 source: Some(e),
             })?;
         }
 
         // Wait for input thread to complete if exists
         if let Some(handle) = input_handle {
+            let _ = handle.join();
+        }
+
+        spawn.handle.wait()
+    }
+
+    /// Stream pipeline's stderr to a Writer.
+    /// This is useful for capturing error output separately.
+    pub fn write_err_to<W: Write>(mut self, mut writer: W) -> Result<(), Error> {
+        // Extract input before spawning
+        let input = self.input.take();
+        let spawn = self.spawn_io_all()?;
+
+        // Handle input in separate thread if provided
+        let input_handle = match input {
+            Some(CmdInput::Bytes(bytes)) => spawn.stdin.map(|mut stdin| {
+                thread::spawn(move || {
+                    use std::io::Write;
+                    let _ = stdin.write_all(&bytes);
+                    drop(stdin);
+                })
+            }),
+            Some(CmdInput::Reader(mut reader)) => spawn.stdin.map(|stdin| {
+                thread::spawn(move || {
+                    use std::io::copy;
+                    let mut stdin = stdin;
+                    let _ = copy(&mut reader, &mut stdin);
+                    drop(stdin);
+                })
+            }),
+            None => None,
+        };
+
+        // Handle stderr in current thread
+        if let Some(stderr) = spawn.stderr {
+            use std::io::copy;
+            copy(&mut BufReader::new(stderr), &mut writer).map_err(|e| Error {
+                message: "Failed to copy pipeline stderr to writer".to_string(),
+                source: Some(e),
+            })?;
+        }
+
+        // Wait for input thread to complete if exists
+        if let Some(handle) = input_handle {
+            let _ = handle.join();
+        }
+
+        spawn.handle.wait()
+    }
+
+    /// Stream pipeline's combined stdout and stderr to a Writer.
+    /// This merges both output streams into the writer.
+    pub fn write_both_to<W: Write + Send + 'static>(mut self, writer: W) -> Result<(), Error> {
+        use std::sync::{Arc, Mutex};
+
+        // Extract input before spawning
+        let input = self.input.take();
+        let spawn = self.spawn_io_all()?;
+
+        // Wrap writer in Arc<Mutex<>> for safe sharing between threads
+        let writer = Arc::new(Mutex::new(writer));
+
+        // Handle input in separate thread if provided
+        let input_handle = match input {
+            Some(CmdInput::Bytes(bytes)) => spawn.stdin.map(|mut stdin| {
+                thread::spawn(move || {
+                    use std::io::Write;
+                    let _ = stdin.write_all(&bytes);
+                    drop(stdin);
+                })
+            }),
+            Some(CmdInput::Reader(mut reader)) => spawn.stdin.map(|stdin| {
+                thread::spawn(move || {
+                    use std::io::copy;
+                    let mut stdin = stdin;
+                    let _ = copy(&mut reader, &mut stdin);
+                    drop(stdin);
+                })
+            }),
+            None => None,
+        };
+
+        // Handle both stdout and stderr in separate threads
+        let stdout_handle = spawn.stdout.map(|stdout| {
+            let writer_clone = Arc::clone(&writer);
+            thread::spawn(move || {
+                use std::io::copy;
+                if let Ok(mut writer_guard) = writer_clone.lock() {
+                    let _ = copy(&mut BufReader::new(stdout), &mut *writer_guard);
+                }
+            })
+        });
+
+        let stderr_handle = spawn.stderr.map(|stderr| {
+            let writer_clone = Arc::clone(&writer);
+            thread::spawn(move || {
+                use std::io::copy;
+                if let Ok(mut writer_guard) = writer_clone.lock() {
+                    let _ = copy(&mut BufReader::new(stderr), &mut *writer_guard);
+                }
+            })
+        });
+
+        // Wait for input thread to complete if exists
+        if let Some(handle) = input_handle {
+            let _ = handle.join();
+        }
+
+        // Wait for output threads to complete
+        if let Some(handle) = stdout_handle {
+            let _ = handle.join();
+        }
+        if let Some(handle) = stderr_handle {
             let _ = handle.join();
         }
 
@@ -654,6 +759,92 @@ impl Pipeline {
                 message: "Failed to copy pipeline output to writer".to_string(),
                 source: Some(e),
             })?;
+        }
+
+        spawn.handle.wait()
+    }
+
+    /// Run the pipeline with input Reader and stderr Writer.
+    /// This is useful for processing data while capturing error output.
+    pub fn run_with_err_io<R: Read + Send + 'static, W: Write>(
+        self,
+        mut reader: R,
+        mut writer: W,
+    ) -> Result<(), Error> {
+        let spawn = self.spawn_io_all()?;
+
+        // Handle input in separate thread
+        if let Some(mut stdin) = spawn.stdin {
+            thread::spawn(move || {
+                use std::io::copy;
+                let _ = copy(&mut reader, &mut stdin);
+            });
+        }
+
+        // Handle stderr output in current thread
+        if let Some(stderr) = spawn.stderr {
+            use std::io::copy;
+            copy(&mut BufReader::new(stderr), &mut writer).map_err(|e| Error {
+                message: "Failed to copy pipeline stderr to writer".to_string(),
+                source: Some(e),
+            })?;
+        }
+
+        spawn.handle.wait()
+    }
+
+    /// Run the pipeline with input Reader and combined stdout+stderr Writer.
+    /// This merges both output streams for comprehensive logging.
+    pub fn run_with_both_io<R: Read + Send + 'static, W: Write + Send + 'static>(
+        self,
+        mut reader: R,
+        writer: W,
+    ) -> Result<(), Error> {
+        use std::sync::{Arc, Mutex};
+
+        let spawn = self.spawn_io_all()?;
+
+        // Handle input in separate thread
+        if let Some(mut stdin) = spawn.stdin {
+            thread::spawn(move || {
+                use std::io::copy;
+                let _ = copy(&mut reader, &mut stdin);
+            });
+        }
+
+        // Wrap writer in Arc<Mutex<>> for safe sharing between threads
+        let writer = Arc::new(Mutex::new(writer));
+
+        // Handle stdout in separate thread
+        let stdout_handle = spawn.stdout.map(|stdout| {
+            let writer = Arc::clone(&writer);
+            thread::spawn(move || {
+                use std::io::copy;
+                let mut reader = BufReader::new(stdout);
+                if let Ok(mut writer) = writer.lock() {
+                    let _ = copy(&mut reader, &mut *writer);
+                }
+            })
+        });
+
+        // Handle stderr in separate thread
+        let stderr_handle = spawn.stderr.map(|stderr| {
+            let writer = Arc::clone(&writer);
+            thread::spawn(move || {
+                use std::io::copy;
+                let mut reader = BufReader::new(stderr);
+                if let Ok(mut writer) = writer.lock() {
+                    let _ = copy(&mut reader, &mut *writer);
+                }
+            })
+        });
+
+        // Wait for all threads to complete
+        if let Some(handle) = stdout_handle {
+            let _ = handle.join();
+        }
+        if let Some(handle) = stderr_handle {
+            let _ = handle.join();
         }
 
         spawn.handle.wait()
