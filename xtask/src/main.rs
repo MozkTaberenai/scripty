@@ -200,6 +200,41 @@ fn run_format_check(project_root: &std::path::Path, verbose: bool) -> Result<()>
     Ok(())
 }
 
+fn run_examples(project_root: &std::path::Path, verbose: bool) -> Result<()> {
+    if !verbose {
+        println!("📋 Running examples...");
+    }
+
+    // Get all example files
+    let examples_dir = project_root.join("examples");
+    let entries = fs::read_dir(&examples_dir)?;
+
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.extension().and_then(|s| s.to_str()) == Some("rs") {
+            let example_name = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .ok_or("Invalid example file name")?;
+
+            if !verbose {
+                println!("  🔧 Running example: {}", example_name);
+            }
+
+            cmd!("cargo", "run", "--example", example_name)
+                .current_dir(project_root)
+                .run()?;
+        }
+    }
+
+    if !verbose {
+        println!("✅ All examples ran successfully!");
+    }
+    Ok(())
+}
+
 fn generate_readme(project_root: &std::path::Path, verbose: bool) -> Result<()> {
     if !verbose {
         println!("📝 Generating README.md...");
@@ -230,6 +265,9 @@ fn run_precommit(verbose: bool) -> Result<()> {
 
     // Generate README
     generate_readme(&project_root, verbose)?;
+
+    // Run examples
+    run_examples(&project_root, verbose)?;
 
     // Run tests
     run_tests(&project_root, verbose)?;
@@ -263,6 +301,9 @@ fn run_ci(verbose: bool) -> Result<()> {
     // Run static analysis
     run_clippy(&project_root, verbose)?;
 
+    // Run examples
+    run_examples(&project_root, verbose)?;
+
     // Run tests
     run_tests(&project_root, verbose)?;
 
@@ -272,6 +313,7 @@ fn run_ci(verbose: bool) -> Result<()> {
         println!("  ✅ Format check");
         println!("  ✅ Compilation check");
         println!("  ✅ Clippy lints");
+        println!("  ✅ Examples check");
         println!("  ✅ Test suite");
     }
 
