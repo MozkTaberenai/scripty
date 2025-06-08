@@ -27,7 +27,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! scripty = "0.1.0"
+//! scripty = "0.3.0"
 //! ```
 //!
 //! ## Platform Support
@@ -419,6 +419,17 @@
 //! ```
 //!
 //! **Learning Path:** Start with `01_simple_pipes.rs` and progress through each numbered example in sequence to build your expertise with scripty's pipeline and I/O capabilities.
+//!
+//! ### Real-World Example: cargo-xtask + clap + scripty
+//!
+//! This project's `xtask/` demonstrates scripty with cargo-xtask and clap:
+//!
+//! ```bash
+//! cargo xtask ci              # Full CI pipeline
+//! cargo xtask precommit       # Pre-commit checks (includes version sync)
+//! ```
+//!
+//! See `xtask/src/main.rs` for the complete implementation combining all three tools.
 //!
 //! ### Advanced Pipeline Performance & Best Practices
 //!

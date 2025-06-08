@@ -10,13 +10,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Nothing yet
 
-## [0.2.0] - 2025-01-01
+## [0.3.0] - 2025-06-08
+
+### Added
+- **`ReadExt` trait** for fluent reader-to-command piping:
+  - `pipe()` method for any `Read` implementation to pipe to commands
+- **Write methods** for streaming output to writers:
+  - `write_to()` - stream stdout to a writer
+  - `write_err_to()` - stream stderr to a writer
+  - `write_both_to()` - stream both stdout and stderr to a writer
+- **Blocking I/O methods** for reader-writer operations:
+  - `run_with_err_io()` - run command with input reader and stderr writer
+  - `run_with_both_io()` - run command with input reader and combined output writer
+- **New focused example progression**:
+  - `03_read_ext.rs` - ReadExt trait functionality demonstration
+  - `04_run_with_io.rs` - Blocking I/O operations examples
+  - `05_spawn_io.rs` - Non-blocking I/O operations examples
+- **Test coverage**:
+  - `write_methods.rs` test module for write method validation
+  - Comprehensive tests for ReadExt trait functionality
+
+### Changed
+- **Example reorganization**: Replaced `03_io_patterns.rs` with focused examples (03-05)
+- **API simplification**: Improved method naming and consistency across I/O operations
+- **Documentation updates**: Enhanced clarity and accuracy across all modules
+- **Project structure**: Streamlined `CONTRIBUTING.md` and CI workflow
+
+### Removed
+- `input_reader()` method (replaced by `ReadExt::pipe()`)
+- `stream_to()` method (replaced by `write_to()`)
+
+### Fixed
+- Improved code quality and consistency across I/O implementations
+
+## [0.2.0] - 2025-06-08
 
 ### Added
 - Complete I/O pattern analysis and mathematical coverage (2³ = 8 patterns)
 - New standardized `spawn_io_*` methods for all I/O control scenarios:
   - `spawn_io_in()` - stdin only (Pattern 100)
-  - `spawn_io_out()` - stdout only (Pattern 010)  
+  - `spawn_io_out()` - stdout only (Pattern 010)
   - `spawn_io_err()` - stderr only (Pattern 001)
   - `spawn_io_in_out()` - stdin + stdout (Pattern 110) - Interactive processing
   - `spawn_io_in_err()` - stdin + stderr (Pattern 101) - Debug scenarios
@@ -25,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Standardized pipe operation naming for consistency:
-  - Simplified `pipe_stderr()` → `pipe_err()` 
+  - Simplified `pipe_stderr()` → `pipe_err()`
   - Simplified `pipe_both()` → `pipe_out_err()`
 - Updated example `03_io_patterns.rs` to demonstrate all 8 I/O patterns with practical use cases
 - Renamed test file from `input_output.rs` to `io_patterns.rs` for clarity
@@ -33,7 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed version-specific references from documentation (Rust 1.87.0+ notes) since it's now the MSRV
 
 ### Fixed
-- Resolved all clippy warnings with appropriate safety considerations
 - Improved code quality and consistency across examples and tests
 
 ### Removed

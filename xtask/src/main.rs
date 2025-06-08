@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use scripty::*;
 use std::path::PathBuf;
+use toml::Value;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -62,20 +63,96 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn sync_version(verbose: bool) -> Result<()> {
+    use std::fs;
+
+    let project_root = get_project_root()?;
+
+    // Read version from Cargo.toml
+    let version = read_version_from_cargo_toml(&project_root)?;
+    if !verbose {
+        println!("📖 Read version {} from Cargo.toml", version);
+    }
+
+    // Update lib.rs documentation
+    let lib_rs_path = project_root.join("src/lib.rs");
+    let lib_content = fs::read_to_string(&lib_rs_path)?;
+    let updated_lib = update_version_in_documentation(&lib_content, &version);
+    fs::write(&lib_rs_path, updated_lib)?;
+    if !verbose {
+        println!("✅ Updated src/lib.rs documentation");
+    }
+
+    // Generate updated README
+    if !verbose {
+        println!("📝 Regenerating README.md...");
+    }
+    cmd!("cargo", "readme").current_dir(&project_root).run()?;
+    if !verbose {
+        println!("✅ README.md updated!");
+    }
+
+    if !verbose {
+        println!("🎉 Version {} synced to documentation!", version);
+    }
+
+    Ok(())
+}
+
+fn read_version_from_cargo_toml(project_root: &std::path::Path) -> Result<String> {
+    use std::fs;
+
+    let cargo_toml_path = project_root.join("Cargo.toml");
+    let content = fs::read_to_string(&cargo_toml_path)?;
+    let parsed: Value = toml::from_str(&content)?;
+
+    let version = parsed["package"]["version"]
+        .as_str()
+        .ok_or("Version not found in Cargo.toml")?;
+
+    Ok(version.to_string())
+}
+
+fn update_version_in_documentation(content: &str, new_version: &str) -> String {
+    // Look for the pattern: scripty = "x.y.z" in documentation comments
+    let pattern = r#"scripty = ""#;
+    let lines: Vec<&str> = content.lines().collect();
+    let mut updated_lines = Vec::new();
+
+    for line in lines {
+        if line.contains("//!") && line.contains(pattern) {
+            // This is a documentation comment line containing version info
+            if let Some(start_pos) = line.find(pattern) {
+                let before = &line[..start_pos + pattern.len()];
+                let after_start = start_pos + pattern.len();
+                if let Some(quote_pos) = line[after_start..].find('"') {
+                    let after = &line[after_start + quote_pos..];
+                    updated_lines.push(format!("{}{}{}", before, new_version, after));
+                } else {
+                    updated_lines.push(line.to_string());
+                }
+            } else {
+                updated_lines.push(line.to_string());
+            }
+        } else {
+            updated_lines.push(line.to_string());
+        }
+    }
+
+    updated_lines.join("\n")
+}
+
 fn run_precommit(verbose: bool) -> Result<()> {
     if !verbose {
         println!("🔍 Running pre-commit checks...");
     }
     let project_root = get_project_root()?;
 
-    // Generate README first to ensure documentation is up to date
+    // Sync version from Cargo.toml to documentation (includes README generation)
     if !verbose {
-        println!("📝 Generating README.md...");
+        println!("🔄 Syncing version...");
     }
-    cmd!("cargo", "readme").current_dir(&project_root).run()?;
-    if !verbose {
-        println!("✅ README.md updated!");
-    }
+    sync_version(verbose)?;
 
     // Run tests
     if !verbose {
