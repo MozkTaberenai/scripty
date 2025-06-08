@@ -1,0 +1,44 @@
+[workspace]
+members = [".", "xtask"]
+
+[package]
+name = "scripty"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.87.0"
+authors = ["Mozk Taberenai <mozktaberenai@gmail.com>"]
+license = "MIT"
+description = "Scripty - your Rust command toolkit for easy command execution and file operations"
+repository = "https://github.com/MozkTaberenai/scripty"
+homepage = "https://github.com/MozkTaberenai/scripty"
+categories = ["command-line-interface"]
+
+[dependencies]
+anstyle = "1.0.7"
+
+[dev-dependencies]
+ansi-to-html = "0.2.1"
+cargo-readme = "3.3.1"
+serial_test = "3.0"
+
+
+# Focused examples showcasing scripty's core strengths: pipelines and I/O
+# Examples are numbered for optimal learning progression
+
+[[example]]
+name = "01_simple_pipes"
+path = "examples/01_simple_pipes.rs"
+[[example]]
+name = "02_pipe_modes"
+path = "examples/02_pipe_modes.rs"
+[[example]]
+name = "03_io_patterns"
+path = "examples/03_io_patterns.rs"
+
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.readme]
+readme-path = "README.md"
