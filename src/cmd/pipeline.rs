@@ -860,35 +860,35 @@ impl Pipeline {
         // Extract input before moving self
         let input = self.input.take();
 
-        // Call spawn_io_all with echo suppressed to avoid double echo
-        self.suppress_echo = true;
-        let spawn = self.spawn_io_all()?;
-
-        // Handle input if provided (for backward compatibility)
-        let input_handle = match input {
-            Some(CmdInput::Bytes(bytes)) => {
-                spawn.stdin.map(|mut stdin| {
-                    thread::spawn(move || {
-                        use std::io::Write;
-                        let _ = stdin.write_all(&bytes);
-                        drop(stdin); // Close stdin to signal EOF
-                    })
-                })
-            }
-            Some(CmdInput::Reader(mut reader)) => {
-                spawn.stdin.map(|stdin| {
-                    thread::spawn(move || {
-                        use std::io::copy;
-                        let mut stdin = stdin;
-                        let _ = copy(&mut reader, &mut stdin);
-                        drop(stdin); // Close stdin to signal EOF
-                    })
-                })
-            }
-            None => None,
-        };
-
         if capture_output {
+            // Call spawn_io_all with echo suppressed to avoid double echo
+            self.suppress_echo = true;
+            let spawn = self.spawn_io_all()?;
+
+            // Handle input if provided (for backward compatibility)
+            let input_handle = match input {
+                Some(CmdInput::Bytes(bytes)) => {
+                    spawn.stdin.map(|mut stdin| {
+                        thread::spawn(move || {
+                            use std::io::Write;
+                            let _ = stdin.write_all(&bytes);
+                            drop(stdin); // Close stdin to signal EOF
+                        })
+                    })
+                }
+                Some(CmdInput::Reader(mut reader)) => {
+                    spawn.stdin.map(|stdin| {
+                        thread::spawn(move || {
+                            use std::io::copy;
+                            let mut stdin = stdin;
+                            let _ = copy(&mut reader, &mut stdin);
+                            drop(stdin); // Close stdin to signal EOF
+                        })
+                    })
+                }
+                None => None,
+            };
+
             if let Some(stdout) = spawn.stdout {
                 let mut output = Vec::new();
                 let mut reader = BufReader::new(stdout);
@@ -914,6 +914,34 @@ impl Pipeline {
                 Ok(Vec::new())
             }
         } else {
+            // For run() method, don't capture output - let it go to terminal
+            self.suppress_echo = true;
+            let spawn = self.spawn_inherit_stdio()?;
+
+            // Handle input if provided (for backward compatibility)
+            let input_handle = match input {
+                Some(CmdInput::Bytes(bytes)) => {
+                    spawn.stdin.map(|mut stdin| {
+                        thread::spawn(move || {
+                            use std::io::Write;
+                            let _ = stdin.write_all(&bytes);
+                            drop(stdin); // Close stdin to signal EOF
+                        })
+                    })
+                }
+                Some(CmdInput::Reader(mut reader)) => {
+                    spawn.stdin.map(|stdin| {
+                        thread::spawn(move || {
+                            use std::io::copy;
+                            let mut stdin = stdin;
+                            let _ = copy(&mut reader, &mut stdin);
+                            drop(stdin); // Close stdin to signal EOF
+                        })
+                    })
+                }
+                None => None,
+            };
+
             // Wait for input thread to complete if exists
             if let Some(handle) = input_handle {
                 let _ = handle.join();
@@ -939,6 +967,136 @@ impl Pipeline {
         cmd
     }
 
+    /// Spawn pipeline with stdio inherited from parent (for run() method)
+    fn spawn_inherit_stdio(self) -> Result<PipelineSpawn, Error> {
+        if !self.suppress_echo {
+            self.echo_pipeline();
+        }
+
+        if self.connections.is_empty() {
+            return Ok(PipelineSpawn {
+                handle: PipelineHandle {
+                    children: Vec::new(),
+                },
+                stdin: None,
+                stdout: None,
+                stderr: None,
+            });
+        }
+
+        // For single command, inherit stdio from parent
+        if self.connections.len() == 1 {
+            let cmd = self.connections.into_iter().next().unwrap().0;
+            let mut std_cmd = Self::build_std_command_static(&cmd);
+
+            // Set up I/O - inherit stdout/stderr from parent, but allow stdin input
+            std_cmd.stdin(Stdio::piped());
+            std_cmd.stdout(Stdio::inherit());
+            std_cmd.stderr(Stdio::inherit());
+
+            let mut child = std_cmd.spawn().map_err(|e| Error {
+                message: format!("Failed to spawn command: {}", cmd.program.to_string_lossy()),
+                source: Some(e),
+            })?;
+
+            let stdin = child.stdin.take();
+
+            return Ok(PipelineSpawn {
+                handle: PipelineHandle {
+                    children: vec![child],
+                },
+                stdin,
+                stdout: None,
+                stderr: None,
+            });
+        }
+
+        // Multi-command pipeline - inherit stdio for the last command
+        let mut children: Vec<Child> = Vec::new();
+        let mut prev_reader: Option<std::io::PipeReader> = None;
+        let mut first_stdin = None;
+
+        // Spawn all commands in the pipeline
+        for (i, (cmd_def, _pipe_mode)) in self.connections.iter().enumerate() {
+            let mut cmd = Self::build_std_command_static(cmd_def);
+
+            // Set up stdin
+            if i == 0 {
+                // First command: set up for potential input
+                cmd.stdin(Stdio::piped());
+            } else {
+                // Subsequent commands: use previous command's output
+                if let Some(reader) = prev_reader.take() {
+                    cmd.stdin(Stdio::from(reader));
+                }
+            }
+
+            // Set up stdout and stderr
+            let is_last = i == self.connections.len() - 1;
+            if is_last {
+                // Last command: inherit stdio to display output to terminal
+                cmd.stdout(Stdio::inherit());
+                cmd.stderr(Stdio::inherit());
+            } else {
+                // Intermediate commands: pipe to next command
+                let next_pipe_mode = self.connections[i + 1].1;
+                match next_pipe_mode {
+                    PipeMode::Stdout => {
+                        let (reader, writer) = std::io::pipe().map_err(|e| Error {
+                            message: "Failed to create stdout pipe".to_string(),
+                            source: Some(e),
+                        })?;
+                        cmd.stdout(Stdio::from(writer));
+                        prev_reader = Some(reader);
+                    }
+                    PipeMode::Stderr => {
+                        let (reader, writer) = std::io::pipe().map_err(|e| Error {
+                            message: "Failed to create stderr pipe".to_string(),
+                            source: Some(e),
+                        })?;
+                        cmd.stderr(Stdio::from(writer));
+                        prev_reader = Some(reader);
+                    }
+                    PipeMode::Both => {
+                        let (reader, writer) = std::io::pipe().map_err(|e| Error {
+                            message: "Failed to create combined pipe".to_string(),
+                            source: Some(e),
+                        })?;
+                        let writer_clone = writer.try_clone().map_err(|e| Error {
+                            message: "Failed to clone pipe writer".to_string(),
+                            source: Some(e),
+                        })?;
+                        cmd.stdout(Stdio::from(writer));
+                        cmd.stderr(Stdio::from(writer_clone));
+                        prev_reader = Some(reader);
+                    }
+                }
+            }
+
+            let mut child = cmd.spawn().map_err(|e| Error {
+                message: format!(
+                    "Failed to spawn command: {}",
+                    cmd_def.program.to_string_lossy()
+                ),
+                source: Some(e),
+            })?;
+
+            // Store stdin of first command for potential input
+            if i == 0 {
+                first_stdin = child.stdin.take();
+            }
+
+            children.push(child);
+        }
+
+        Ok(PipelineSpawn {
+            handle: PipelineHandle { children },
+            stdin: first_stdin,
+            stdout: None,
+            stderr: None,
+        })
+    }
+
     fn echo_pipeline(&self) {
         if !crate::output::should_echo() {
             return;
@@ -948,7 +1106,7 @@ impl Pipeline {
 
         // Add cmd prefix
         parts.push(format!(
-            "{BRIGHT_BLACK}{}:cmd{BRIGHT_BLACK:#}",
+            " {BRIGHT_BLACK}{}:cmd{BRIGHT_BLACK:#}",
             env!("CARGO_PKG_NAME")
         ));
 

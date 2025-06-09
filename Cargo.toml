@@ -26,6 +26,9 @@ serial_test = "3.0"
 # Examples are numbered for optimal learning progression
 
 [[example]]
+name = "00_basic"
+path = "examples/00_basic.rs"
+[[example]]
 name = "01_simple_pipes"
 path = "examples/01_simple_pipes.rs"
 [[example]]

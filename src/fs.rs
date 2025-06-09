@@ -13,7 +13,7 @@ use std::path::Path;
 fn echo_operation(op: &str, details: &str) {
     if should_echo() {
         let styled_fs = format!(
-            "{BRIGHT_BLACK}{}:fs{BRIGHT_BLACK:#}",
+            "  {BRIGHT_BLACK}{}:fs{BRIGHT_BLACK:#}",
             env!("CARGO_PKG_NAME")
         );
         let styled_op = format!("{BOLD_CYAN}{op}{BOLD_CYAN:#}");
