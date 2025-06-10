@@ -11,8 +11,15 @@ for development.
 cargo xtask precommit
 ```
 
-This command runs comprehensive checks (tests + clippy + formatting). **ALL checks must pass**
-before committing.
+This command performs the following actions:
+1. **Version synchronization** - Updates version in src/lib.rs documentation from Cargo.toml
+2. **README generation** - Regenerates README.md from src/lib.rs using `cargo readme`
+3. **Example verification** - Runs all examples to ensure they work correctly
+4. **Test execution** - Runs all tests
+5. **Clippy checks** - Ensures no warnings with strict settings
+6. **Format checking** - Verifies code formatting with rustfmt
+
+**ALL checks must pass** before committing. The command will modify files (README.md, src/lib.rs) if needed.
 
 ## Quick Start
 
@@ -53,10 +60,14 @@ scripty/
 │   ├── style.rs            # ANSI color and styling support
 │   └── color.rs            # Public color API
 ├── examples/               # Usage examples demonstrating features
-│   ├── 00_basic.rs         # Simple command execution
+│   ├── 00_hello_world.rs   # Comprehensive introduction to scripty
 │   ├── 01_simple_pipes.rs  # Basic piping patterns
 │   ├── 02_pipe_modes.rs    # Advanced pipe modes (stdout/stderr/both)
-│   └── ...                 # Additional examples
+│   ├── 03_read_ext.rs      # ReadExt trait for fluent reader piping
+│   ├── 04_run_with_io.rs   # Blocking reader-writer I/O operations
+│   ├── 05_spawn_io.rs      # Non-blocking I/O control patterns
+│   ├── error_handling.rs   # Error handling best practices
+│   └── fs_operations.rs    # File system operations with echo
 ├── tests/                  # Integration tests
 └── xtask/                  # Development automation
     └── src/main.rs         # Tasks: precommit, ci, readme generation
@@ -118,8 +129,8 @@ cargo fmt                                               # Format code
 
 # Project-specific xtask commands
 cargo readme          # Generate README.md from src/lib.rs
-cargo xtask precommit # Run test + clippy + fmt (includes README generation)
-cargo xtask ci        # Full CI pipeline
+cargo xtask precommit # Version sync + README gen + examples + test + clippy + fmt
+cargo xtask ci        # Full CI pipeline (same as precommit)
 ```
 
 ## Code Quality (MANDATORY)
@@ -132,8 +143,8 @@ cargo xtask ci        # Full CI pipeline
 # Step 1: Ensure tests pass
 cargo test
 
-# Step 2: Run all pre-commit checks (RECOMMENDED)
-cargo xtask precommit  # Runs test + clippy + fmt automatically
+# Step 2: Run all pre-commit checks (MANDATORY)
+cargo xtask precommit  # Syncs version, generates README, runs examples, tests, clippy, fmt
 
 # Step 3: CRITICAL - Handle formatting changes
 git status  # Check for changes made by rustfmt
@@ -168,9 +179,9 @@ git push origin feature/branch-name
    cargo xtask precommit  # Runs test + clippy + fmt
    ```
 
-2. **Before final commit** (includes README generation):
+2. **Before final commit**:
    ```bash
-   cargo xtask ci
+   cargo xtask ci  # Same as precommit, ensures everything is ready
    ```
 
 3. **Important**: If `cargo fmt` makes changes, commit them separately:
