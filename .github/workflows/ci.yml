@@ -36,9 +36,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
       - name: Install taplo
-        uses: taiki-e/install-action@v2
-        with:
-          tool: taplo-cli
+        uses: uncenter/setup-taplo@v1
       - name: Install dprint
         uses: taiki-e/install-action@v2
         with:
