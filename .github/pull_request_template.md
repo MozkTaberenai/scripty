@@ -14,7 +14,7 @@ Brief description of what this PR does.
 ## Changes Made
 
 - [ ] Change 1
-- [ ] Change 2  
+- [ ] Change 2
 - [ ] Change 3
 
 ## Testing

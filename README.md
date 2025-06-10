@@ -2,14 +2,14 @@
 
 ## scripty
 
-**Scripty** - A simple and intuitive library that makes running shell commands and file operations easy and visible.
+**Scripty** - A simple and intuitive library that makes running shell commands and file operations
+easy and visible.
 
 ### Why scripty?
 
-When you need to write system administration scripts, build tools, or automation in Rust,
-you often find yourself wrestling with `std::process::Command` and `std::fs`. scripty
-provides a clean, shell-script-like interface while keeping all the benefits of Rust's
-type safety and error handling.
+When you need to write system administration scripts, build tools, or automation in Rust, you often
+find yourself wrestling with `std::process::Command` and `std::fs`. scripty provides a clean,
+shell-script-like interface while keeping all the benefits of Rust's type safety and error handling.
 
 #### Key Features
 
@@ -35,6 +35,7 @@ scripty = "0.3.1"
 ### Platform Support
 
 Currently supported platforms:
+
 - **Linux** ✅ Full support with native pipe optimization
 - **macOS** ✅ Full support with native pipe optimization
 
@@ -98,7 +99,8 @@ let sorted = data.pipe(cmd!("sort")).output()?;
 
 #### Command Piping
 
-Chain commands together just like in shell scripts using native `std::io::pipe` for enhanced performance and memory efficiency!
+Chain commands together just like in shell scripts using native `std::io::pipe` for enhanced
+performance and memory efficiency!
 
 ```rust
 use scripty::*;
@@ -388,7 +390,8 @@ Or use the `.no_echo()` method on individual commands.
 
 ### Examples
 
-This crate includes focused examples showcasing scripty's core strengths: **pipeline operations** and **I/O handling**:
+This crate includes focused examples showcasing scripty's core strengths: **pipeline operations**
+and **I/O handling**:
 
 Examples are numbered for optimal learning progression:
 
@@ -399,6 +402,7 @@ Examples are numbered for optimal learning progression:
 5. **`05_spawn_io.rs`** - Non-blocking I/O control with spawn_io_*() methods
 
 Run examples in order for the best learning experience:
+
 ```bash
 cargo run --example 01_simple_pipes    # 1. Pipeline fundamentals
 cargo run --example 02_pipe_modes      # 2. Advanced piping control
@@ -407,7 +411,8 @@ cargo run --example 04_run_with_io     # 4. Blocking reader-writer I/O
 cargo run --example 05_spawn_io        # 5. Non-blocking I/O control
 ```
 
-**Learning Path:** Start with `01_simple_pipes.rs` and progress through each numbered example in sequence to build your expertise with scripty's pipeline and I/O capabilities.
+**Learning Path:** Start with `01_simple_pipes.rs` and progress through each numbered example in
+sequence to build your expertise with scripty's pipeline and I/O capabilities.
 
 #### Real-World Example: cargo-xtask + clap + scripty
 
@@ -447,6 +452,7 @@ large_file.pipe(cmd!("grep", "ERROR"))
 ##### Pipeline Best Practices
 
 **Memory Management:**
+
 ```rust
 use scripty::*;
 
@@ -465,6 +471,7 @@ cmd!("find", "/", "-type", "f")
 ```
 
 **Error-Prone Pipelines:**
+
 ```rust
 use scripty::*;
 
@@ -484,6 +491,7 @@ match cmd!("risky-command")
 ```
 
 **Complex Data Processing:**
+
 ```rust
 use scripty::*;
 
@@ -499,6 +507,7 @@ let processed = cmd!("cat", "data.json")
 ##### Troubleshooting Common Issues
 
 **Large Data Processing:**
+
 ```rust
 use scripty::*;
 // Problem: Memory usage with large files
@@ -514,6 +523,7 @@ reader.pipe(cmd!("awk", "{sum += $1} END {print sum}"))
 ```
 
 **Pipeline Debugging:**
+
 ```rust
 use scripty::*;
 
@@ -528,6 +538,7 @@ cmd!("complex-command")
 ```
 
 **Error Isolation:**
+
 ```rust
 use scripty::*;
 
@@ -549,7 +560,8 @@ println!("Stage 2 output: {}", stage2);
 
 ### Contributing
 
-We welcome contributions! Please see our [GitHub repository](https://github.com/MozkTaberenai/scripty) for more information.
+We welcome contributions! Please see our
+[GitHub repository](https://github.com/MozkTaberenai/scripty) for more information.
 
 ### License
 
