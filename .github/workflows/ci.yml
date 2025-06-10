@@ -35,12 +35,13 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
-      - name: Install cargo-binstall
-        run: |
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-      - name: Install formatting tools
-        run: |
-          cargo binstall --no-confirm taplo-cli dprint || \
-          (cargo install taplo-cli && cargo install dprint)
+      - name: Install taplo
+        uses: taiki-e/install-action@v2
+        with:
+          tool: taplo-cli
+      - name: Install dprint
+        uses: taiki-e/install-action@v2
+        with:
+          tool: dprint
       - name: Run CI
         run: cargo xtask ci
