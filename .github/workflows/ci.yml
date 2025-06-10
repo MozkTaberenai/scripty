@@ -30,9 +30,14 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
+      - name: Install formatting tools
+        run: |
+          cargo install taplo-cli
+          cargo install dprint
       - name: Run CI
         run: cargo xtask ci
