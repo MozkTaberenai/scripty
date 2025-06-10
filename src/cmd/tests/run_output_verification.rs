@@ -290,10 +290,15 @@ fn test_run_with_no_echo_still_outputs() {
 #[test]
 fn test_run_handles_binary_output() {
     if std::env::var("TEST_SUBPROCESS").is_ok() {
-        // Output some binary data
-        cmd!("sh", "-c", "printf '\\x00\\x01\\x02\\xFF'")
-            .run()
-            .unwrap();
+        // Use Python for consistent cross-platform binary output
+        // Python is widely available and handles binary output consistently
+        cmd!(
+            "python3",
+            "-c",
+            "import sys; sys.stdout.buffer.write(b'\\x00\\x01\\x02\\xFF'); sys.stdout.buffer.flush()"
+        )
+        .run()
+        .unwrap();
         return;
     }
 
