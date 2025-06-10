@@ -21,13 +21,13 @@ fn main() -> Result<()> {
     // Section 2: Mixed mode examples
     mixed_mode_examples()?;
 
-    println!("\n🎉 Pipe modes tutorial completed!");
+    println!("\n🎉 Pipe modes example completed!");
     println!("Key concepts learned:");
     println!("  • pipe() - Routes stdout to next command's stdin (default)");
     println!("  • pipe_err() - Routes stderr to next command's stdin");
     println!("  • pipe_out_err() - Routes both stdout+stderr to next command's stdin");
     println!("\n🚀 Next step:");
-    println!("   • Run 'cargo run --example 03_io_patterns' for I/O operations");
+    println!("   • Run 'cargo run --example 03_read_ext' for reader extensions");
 
     Ok(())
 }

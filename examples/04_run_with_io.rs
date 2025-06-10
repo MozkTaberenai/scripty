@@ -23,23 +23,23 @@ fn main() -> Result<()> {
     setup_sample_data()?;
 
     // 1. Basic run_with_io() - stdout processing
-    println!("1. run_with_io() - Standard Output Processing:");
+    println!("1️⃣ run_with_io() - Standard Output Processing:");
     basic_run_with_io_examples()?;
 
     // 2. run_with_err_io() - error stream capture
-    println!("\n2. run_with_err_io() - Error Stream Capture:");
+    println!("\n2️⃣ run_with_err_io() - Error Stream Capture:");
     error_capture_examples()?;
 
     // 3. run_with_both_io() - combined output handling
-    println!("\n3. run_with_both_io() - Combined Output Handling:");
+    println!("\n3️⃣ run_with_both_io() - Combined Output Handling:");
     combined_output_examples()?;
 
     // 4. Real-world use cases
-    println!("\n4. Real-world Use Cases:");
+    println!("\n4️⃣ Real-world Use Cases:");
     real_world_examples()?;
 
     // 5. Performance and streaming benefits
-    println!("\n5. Performance and Streaming Benefits:");
+    println!("\n5️⃣ Performance and Streaming Benefits:");
     performance_examples()?;
 
     // Cleanup

@@ -66,14 +66,9 @@ impl PipelineHandle {
 
 impl Pipeline {
     /// Add another command to the pipeline, piping stdout.
-    pub fn pipe_out(mut self, cmd: Cmd) -> Self {
+    pub fn pipe(mut self, cmd: Cmd) -> Self {
         self.connections.push((cmd, PipeMode::Stdout));
         self
-    }
-
-    /// Add another command to the pipeline (alias for pipe_out).
-    pub fn pipe(self, cmd: Cmd) -> Self {
-        self.pipe_out(cmd)
     }
 
     /// Add another command to the pipeline, piping stderr.
@@ -92,13 +87,6 @@ impl Pipeline {
     /// Accepts `Vec<u8>`, `&[u8]`, or other types that can be converted to `Vec<u8>`.
     pub fn input_bytes(mut self, input: impl AsRef<[u8]>) -> Self {
         self.input = Some(CmdInput::Bytes(input.as_ref().to_vec()));
-        self
-    }
-
-    /// Set binary input data for the pipeline with zero-copy optimization.
-    /// Takes ownership of `Vec<u8>` to avoid copying.
-    pub fn input_bytes_owned(mut self, bytes: Vec<u8>) -> Self {
-        self.input = Some(CmdInput::Bytes(bytes));
         self
     }
 

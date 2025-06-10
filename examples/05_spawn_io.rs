@@ -41,31 +41,31 @@ fn main() -> Result<()> {
     println!();
 
     // Pattern 100: Input control only
-    println!("1. spawn_io_in() - Input Control Only (Pattern 100):");
+    println!("1️⃣ spawn_io_in() - Input Control Only (Pattern 100):");
     input_only_examples()?;
 
     // Pattern 010: Output capture only
-    println!("\n2. spawn_io_out() - Output Capture Only (Pattern 010):");
+    println!("\n2️⃣ spawn_io_out() - Output Capture Only (Pattern 010):");
     output_only_examples()?;
 
     // Pattern 001: Error monitoring only
-    println!("\n3. spawn_io_err() - Error Monitoring Only (Pattern 001):");
+    println!("\n3️⃣ spawn_io_err() - Error Monitoring Only (Pattern 001):");
     error_only_examples()?;
 
     // Pattern 110: Interactive processing (Most Important!)
-    println!("\n4. spawn_io_in_out() - Interactive Processing (Pattern 110) ⭐:");
+    println!("\n4️⃣ spawn_io_in_out() - Interactive Processing (Pattern 110) ⭐:");
     interactive_processing_examples()?;
 
     // Pattern 101: Debug scenarios (Critical for development!)
-    println!("\n5. spawn_io_in_err() - Debug Scenarios (Pattern 101) ⭐:");
+    println!("\n5️⃣ spawn_io_in_err() - Debug Scenarios (Pattern 101) ⭐:");
     debug_scenarios_examples()?;
 
     // Pattern 011: Output separation
-    println!("\n6. spawn_io_out_err() - Output Separation (Pattern 011):");
+    println!("\n6️⃣ spawn_io_out_err() - Output Separation (Pattern 011):");
     output_separation_examples()?;
 
     // Pattern 111: Complete control
-    println!("\n7. spawn_io_all() - Complete Control (Pattern 111):");
+    println!("\n7️⃣ spawn_io_all() - Complete Control (Pattern 111):");
     complete_control_examples()?;
 
     println!("\n🎉 All 7 spawn_io patterns mastered!");
