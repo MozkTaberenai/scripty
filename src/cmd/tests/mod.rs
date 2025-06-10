@@ -15,4 +15,5 @@ mod io_patterns;
 mod no_echo;
 mod pipeline;
 mod quoting;
+mod run_output_verification;
 mod write_methods;
