@@ -12,6 +12,7 @@ cargo xtask precommit
 ```
 
 This command performs the following actions:
+
 1. **Version synchronization** - Updates version in src/lib.rs documentation from Cargo.toml
 2. **README generation** - Regenerates README.md from src/lib.rs using `cargo readme`
 3. **Example verification** - Runs all examples to ensure they work correctly
@@ -19,7 +20,8 @@ This command performs the following actions:
 5. **Clippy checks** - Ensures no warnings with strict settings
 6. **Format checking** - Verifies code formatting with rustfmt
 
-**ALL checks must pass** before committing. The command will modify files (README.md, src/lib.rs) if needed.
+**ALL checks must pass** before committing. The command will modify files (README.md, src/lib.rs) if
+needed.
 
 ## Quick Start
 
