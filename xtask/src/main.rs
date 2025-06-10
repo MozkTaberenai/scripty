@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use scripty::*;
 use std::fs::File;
-use std::io::BufWriter;
+use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
 use toml::Value;
 
@@ -62,6 +62,100 @@ fn main() -> Result<()> {
         Commands::Ci => run_ci(verbose)?,
     }
 
+    Ok(())
+}
+
+fn check_tool(name: &str) -> bool {
+    cmd!("which", name).output().is_ok()
+}
+
+fn ensure_tool_installed(name: &str, package: &str, _verbose: bool) -> Result<bool> {
+    if !check_tool(name) {
+        // In CI environment, don't prompt for installation
+        if std::env::var("CI").is_ok() {
+            return Err(format!("{} is not installed. Please install it manually.", name).into());
+        }
+
+        println!("⚠️  {} is not installed.", name);
+        print!("Would you like to install it via cargo? [y/N] ");
+        io::stdout().flush()?;
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+
+        if input.trim().to_lowercase() == "y" {
+            println!("📦 Installing {}...", name);
+            cmd!("cargo", "install", package).run()?;
+            println!("✅ {} installed successfully!", name);
+            Ok(true)
+        } else {
+            println!("⚠️  Skipping {} formatting (not installed)", name);
+            Ok(false)
+        }
+    } else {
+        Ok(true)
+    }
+}
+
+fn run_format_toml(project_root: &std::path::Path, verbose: bool) -> Result<()> {
+    if ensure_tool_installed("taplo", "taplo-cli", verbose)? {
+        if !verbose {
+            println!("🎨 Formatting TOML files...");
+        }
+        cmd!("taplo", "fmt").current_dir(project_root).run()?;
+        if !verbose {
+            println!("✅ TOML files formatted!");
+        }
+    }
+    Ok(())
+}
+
+fn run_format_markdown(project_root: &std::path::Path, verbose: bool) -> Result<()> {
+    if ensure_tool_installed("dprint", "dprint", verbose)? {
+        if !verbose {
+            println!("🎨 Formatting Markdown files...");
+        }
+        cmd!("dprint", "fmt", "**/*.md")
+            .current_dir(project_root)
+            .run()?;
+        if !verbose {
+            println!("✅ Markdown files formatted!");
+        }
+    }
+    Ok(())
+}
+
+fn run_format_toml_check(project_root: &std::path::Path, verbose: bool) -> Result<()> {
+    let tool_available = ensure_tool_installed("taplo", "taplo-cli", verbose)?;
+    if !tool_available {
+        return Err("taplo is required for CI checks but not installed".into());
+    }
+    if !verbose {
+        println!("🎨 Checking TOML formatting...");
+    }
+    cmd!("taplo", "fmt", "--check")
+        .current_dir(project_root)
+        .run()?;
+    if !verbose {
+        println!("✅ TOML format check passed!");
+    }
+    Ok(())
+}
+
+fn run_format_markdown_check(project_root: &std::path::Path, verbose: bool) -> Result<()> {
+    let tool_available = ensure_tool_installed("dprint", "dprint", verbose)?;
+    if !tool_available {
+        return Err("dprint is required for CI checks but not installed".into());
+    }
+    if !verbose {
+        println!("🎨 Checking Markdown formatting...");
+    }
+    cmd!("dprint", "check", "**/*.md")
+        .current_dir(project_root)
+        .run()?;
+    if !verbose {
+        println!("✅ Markdown format check passed!");
+    }
     Ok(())
 }
 
@@ -278,6 +372,12 @@ fn run_precommit(verbose: bool) -> Result<()> {
     // Format code
     run_format(&project_root, verbose)?;
 
+    // Format TOML files
+    run_format_toml(&project_root, verbose)?;
+
+    // Format Markdown files
+    run_format_markdown(&project_root, verbose)?;
+
     if !verbose {
         println!("🎉 Pre-commit checks completed successfully!");
         println!("✅ Ready to commit!");
@@ -295,6 +395,12 @@ fn run_ci(verbose: bool) -> Result<()> {
     // Check formatting
     run_format_check(&project_root, verbose)?;
 
+    // Check TOML formatting
+    run_format_toml_check(&project_root, verbose)?;
+
+    // Check Markdown formatting
+    run_format_markdown_check(&project_root, verbose)?;
+
     // Check compilation
     run_check(&project_root, verbose)?;
 
@@ -311,6 +417,8 @@ fn run_ci(verbose: bool) -> Result<()> {
         println!("🎉 All CI checks completed successfully!");
         println!("🔍 Summary:");
         println!("  ✅ Format check");
+        println!("  ✅ TOML format check");
+        println!("  ✅ Markdown format check");
         println!("  ✅ Compilation check");
         println!("  ✅ Clippy lints");
         println!("  ✅ Examples check");

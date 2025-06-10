@@ -30,9 +30,16 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
+      - name: Install taplo
+        uses: uncenter/setup-taplo@v1
+      - name: Install dprint
+        uses: taiki-e/install-action@v2
+        with:
+          tool: dprint
       - name: Run CI
         run: cargo xtask ci

@@ -21,10 +21,12 @@ ansi-to-html = "0.2.1"
 cargo-readme = "3.3.1"
 serial_test = "3.0"
 
-
 # Focused examples showcasing scripty's core strengths: pipelines and I/O
 # Examples are numbered for optimal learning progression
 
+[[example]]
+name = "00_basic"
+path = "examples/00_basic.rs"
 [[example]]
 name = "01_simple_pipes"
 path = "examples/01_simple_pipes.rs"
@@ -40,7 +42,6 @@ path = "examples/04_run_with_io.rs"
 [[example]]
 name = "05_spawn_io"
 path = "examples/05_spawn_io.rs"
-
 
 [package.metadata.docs.rs]
 all-features = true

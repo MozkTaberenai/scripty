@@ -2,23 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
 ### Added
+
 - Nothing yet
 
 ## [0.3.1] - 2025-06-08
 
 ### Changed
-- Command echo prefix from "cmd" to "{package_name}:cmd" using `CARGO_PKG_NAME` for better tool identification
-- File system operation echo prefix from "fs" to "{package_name}:fs" using `CARGO_PKG_NAME` for better tool identification
+
+- Command echo prefix from "cmd" to "{package_name}:cmd" using `CARGO_PKG_NAME` for better tool
+  identification
+- File system operation echo prefix from "fs" to "{package_name}:fs" using `CARGO_PKG_NAME` for
+  better tool identification
 
 ## [0.3.0] - 2025-06-08
 
 ### Added
+
 - **`ReadExt` trait** for fluent reader-to-command piping:
   - `pipe()` method for any `Read` implementation to pipe to commands
 - **Write methods** for streaming output to writers:
@@ -37,21 +42,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Comprehensive tests for ReadExt trait functionality
 
 ### Changed
+
 - **Example reorganization**: Replaced `03_io_patterns.rs` with focused examples (03-05)
 - **API simplification**: Improved method naming and consistency across I/O operations
 - **Documentation updates**: Enhanced clarity and accuracy across all modules
 - **Project structure**: Streamlined `CONTRIBUTING.md` and CI workflow
 
 ### Removed
+
 - `input_reader()` method (replaced by `ReadExt::pipe()`)
 - `stream_to()` method (replaced by `write_to()`)
 
 ### Fixed
+
 - Improved code quality and consistency across I/O implementations
 
 ## [0.2.0] - 2025-06-08
 
 ### Added
+
 - Complete I/O pattern analysis and mathematical coverage (2³ = 8 patterns)
 - New standardized `spawn_io_*` methods for all I/O control scenarios:
   - `spawn_io_in()` - stdin only (Pattern 100)
@@ -63,24 +72,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `spawn_io_all()` - complete control (Pattern 111)
 
 ### Changed
+
 - Standardized pipe operation naming for consistency:
   - Simplified `pipe_stderr()` → `pipe_err()`
   - Simplified `pipe_both()` → `pipe_out_err()`
 - Updated example `03_io_patterns.rs` to demonstrate all 8 I/O patterns with practical use cases
 - Renamed test file from `input_output.rs` to `io_patterns.rs` for clarity
 - Updated test function names to match new API naming conventions
-- Removed version-specific references from documentation (Rust 1.87.0+ notes) since it's now the MSRV
+- Removed version-specific references from documentation (Rust 1.87.0+ notes) since it's now the
+  MSRV
 
 ### Fixed
+
 - Improved code quality and consistency across examples and tests
 
 ### Removed
+
 - `pipe_stderr()` method (use `pipe_err()` instead)
 - `pipe_both()` method (use `pipe_out_err()` instead)
 
 ## [0.1.0] - 2025-06-08
 
 ### Added
+
 - Initial public release of scripty
 - `cmd!` macro for intuitive command execution
 - Command piping with `.pipe()`, `.pipe_stderr()`, and `.pipe_both()` methods
@@ -98,7 +112,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Native pipeline performance using `std::io::pipe` (Rust 1.87.0+)
 - Extensive example collection organized by difficulty level:
   - Basic examples (hello_world, simple_commands, simple_pipes, simple_fs)
-  - Intermediate examples (environment, error_handling, pipe_modes, mixed_pipe_modes, reader_writer_demo)
+  - Intermediate examples (environment, error_handling, pipe_modes, mixed_pipe_modes,
+    reader_writer_demo)
   - Advanced examples (complex_pipes, command_quoting, control_char_demo, streaming_io)
 - Comprehensive test suite with 118+ unit tests and integration tests
 - Complete documentation with usage examples and tutorials
