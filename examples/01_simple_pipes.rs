@@ -18,19 +18,19 @@ fn main() -> Result<()> {
     println!("=================================================\n");
 
     // 1. Basic two-command pipes
-    println!("1. Basic pipelines:");
+    println!("1️⃣ Basic pipelines:");
     basic_pipes()?;
 
     // 2. Multiple command chains
-    println!("\n2. Multi-stage command chains:");
+    println!("\n2️⃣ Multi-stage command chains:");
     multiple_pipes()?;
 
     // 3. Input data processing
-    println!("\n3. Data processing pipelines:");
+    println!("\n3️⃣ Data processing pipelines:");
     input_processing()?;
 
     // 4. Performance and memory efficiency
-    println!("\n4. Performance advantages:");
+    println!("\n4️⃣ Performance advantages:");
     performance_demo()?;
 
     println!("\n🎉 Pipeline fundamentals completed!");
@@ -144,7 +144,7 @@ fn multiple_pipes() -> Result<()> {
         .pipe(cmd!("sort")) // sort lines
         .pipe(cmd!("tr", "\n", ",")) // newline to comma
         .output()?;
-    println!("   Sorted result: {}", result.trim());
+    println!("   ✅ Final result: {}", result.trim());
 
     // Text analysis pipeline
     println!("\n📊 Text analysis pipeline:");

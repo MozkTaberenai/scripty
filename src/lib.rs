@@ -27,7 +27,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! scripty = "0.3.1"
+//! scripty = "0.4.0"
 //! ```
 //!
 //! ## Platform Support

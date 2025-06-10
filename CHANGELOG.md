@@ -11,6 +11,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Nothing yet
 
+## [0.4.0] - 2025-06-11
+
+### Breaking Changes
+
+- **Renamed `pipe_out()` to `pipe()`** - `pipe()` is now the primary method for stdout piping
+- **Removed `pipe()` alias** - Use the renamed `pipe()` method directly
+- **Removed `input_bytes_owned()` method** - Use `input_bytes()` instead for all binary input needs
+
+### Added
+
+- **New example `fs_operations.rs`** - Comprehensive demonstration of file system operations
+- **New example `error_handling.rs`** - Best practices for error handling and recovery
+- **Improved `00_hello_world.rs`** - Expanded from 4 lines to a comprehensive introduction
+
+### Changed
+
+- **Enhanced example organization** - Replaced minimal `00_basic.rs` with comprehensive
+  `00_hello_world.rs`
+- **Unified emoji usage** - Consistent emoji usage across all examples for better visual clarity
+- **API simplification** - Removed redundant methods to provide a cleaner, more intuitive API
+
 ## [0.3.1] - 2025-06-08
 
 ### Changed

@@ -64,12 +64,6 @@ impl Cmd {
         self.into_pipeline().input_bytes(input)
     }
 
-    /// Set binary input data for the command with zero-copy optimization.
-    /// Takes ownership of `Vec<u8>` to avoid copying.
-    pub fn input_bytes_owned(self, bytes: Vec<u8>) -> Pipeline {
-        self.into_pipeline().input_bytes_owned(bytes)
-    }
-
     /// Set text input for the command.
     /// Optimized to convert string directly to bytes without intermediate allocation.
     pub fn input(self, input: impl AsRef<str>) -> Pipeline {
@@ -93,25 +87,17 @@ impl Cmd {
     ///
     /// // Standard pipe (stdout → stdin)
     /// let output = cmd!("echo", "hello")
-    ///     .pipe_out(cmd!("tr", "[:lower:]", "[:upper:]"))
+    ///     .pipe(cmd!("tr", "[:lower:]", "[:upper:]"))
     ///     .output()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn pipe_out(self, next: Cmd) -> Pipeline {
+    pub fn pipe(self, next: Cmd) -> Pipeline {
         let suppress_echo = self.suppress_echo || next.suppress_echo;
         Pipeline {
             connections: vec![(self, PipeMode::Stdout), (next, PipeMode::Stdout)],
             input: None,
             suppress_echo,
         }
-    }
-
-    /// Pipe this command to another command (alias for pipe_out).
-    ///
-    /// This is an alias for `pipe_out()` to maintain backward compatibility.
-    /// Uses the standard Unix pipe behavior where stdout becomes stdin.
-    pub fn pipe(self, next: Cmd) -> Pipeline {
-        self.pipe_out(next)
     }
 
     /// Pipe this command's stderr to another command's stdin.

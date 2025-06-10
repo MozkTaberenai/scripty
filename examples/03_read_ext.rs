@@ -24,19 +24,19 @@ fn main() -> Result<()> {
     setup_sample_files()?;
 
     // 1. Basic file-to-command piping
-    println!("1. File-to-command piping:");
+    println!("1️⃣ File-to-command piping:");
     file_piping_examples()?;
 
     // 2. Memory-efficient streaming
-    println!("\n2. Memory-efficient streaming:");
+    println!("\n2️⃣ Memory-efficient streaming:");
     streaming_examples()?;
 
     // 3. Different reader types
-    println!("\n3. Working with different reader types:");
+    println!("\n3️⃣ Working with different reader types:");
     reader_types_examples()?;
 
     // 4. Chaining with pipeline methods
-    println!("\n4. Advanced pipeline chaining:");
+    println!("\n4️⃣ Advanced pipeline chaining:");
     advanced_chaining_examples()?;
 
     // Cleanup
@@ -92,7 +92,7 @@ fn file_piping_examples() -> Result<()> {
     println!("   Command: file.pipe(wc -l)");
     let file = File::open("sample_log.txt")?;
     let line_count = file.pipe(cmd!("wc", "-l")).output()?;
-    println!("   Log file has {} lines", line_count.trim());
+    println!("   ✅ Log file has {} lines", line_count.trim());
 
     // Error filtering
     println!("\n🔍 Error log filtering:");
@@ -102,7 +102,7 @@ fn file_piping_examples() -> Result<()> {
     println!("   ERROR entries found:");
     for line in errors.lines() {
         if !line.trim().is_empty() {
-            println!("     {}", line.trim());
+            println!("     ⚠️  {}", line.trim());
         }
     }
 
@@ -111,7 +111,10 @@ fn file_piping_examples() -> Result<()> {
     println!("   Command: file.pipe(sort -n)");
     let file = File::open("numbers.txt")?;
     let sorted_numbers = file.pipe(cmd!("sort", "-n")).output()?;
-    println!("   Sorted numbers: {}", sorted_numbers.replace('\n', ", "));
+    println!(
+        "   ✅ Sorted numbers: {}",
+        sorted_numbers.replace('\n', ", ")
+    );
 
     Ok(())
 }
@@ -125,7 +128,7 @@ fn streaming_examples() -> Result<()> {
     let file = File::open("sample_log.txt")?;
     let buf_reader = BufReader::new(file);
     let word_count = buf_reader.pipe(cmd!("wc", "-w")).output()?;
-    println!("   Total words in log: {}", word_count.trim());
+    println!("   ✅ Total words in log: {}", word_count.trim());
 
     // Statistics calculation
     println!("\n📈 Statistical analysis:");
@@ -135,7 +138,7 @@ fn streaming_examples() -> Result<()> {
     let stats = buf_reader
         .pipe(cmd!("awk", "{sum += $1; count++} END {printf \"Sum: %d, Count: %d, Average: %.2f\\n\", sum, count, sum/count}"))
         .output()?;
-    println!("   Statistics: {}", stats.trim());
+    println!("   ✅ Statistics: {}", stats.trim());
 
     // Large data simulation with streaming
     println!("\n⚡ Streaming efficiency demonstration:");
@@ -151,7 +154,7 @@ fn streaming_examples() -> Result<()> {
         .pipe(cmd!("head", "-3"))
         .output()?;
     println!(
-        "   Last 5, then first 3 numbers: {}",
+        "   ✅ Last 5, then first 3 numbers: {}",
         result.replace('\n', ", ")
     );
 
@@ -166,28 +169,28 @@ fn reader_types_examples() -> Result<()> {
     let data = b"zebra\napple\nbanana\ncherry\ndate";
     let cursor = Cursor::new(data);
     let sorted = cursor.pipe(cmd!("sort")).output()?;
-    println!("   Sorted fruits: {}", sorted.replace('\n', ", "));
+    println!("   ✅ Sorted fruits: {}", sorted.replace('\n', ", "));
 
     // String data processing
     println!("\n📝 Text data processing:");
     let text_data = "Hello World\nRust is awesome\nPiping is powerful";
     let cursor = Cursor::new(text_data.as_bytes());
     let word_count = cursor.pipe(cmd!("wc", "-w")).output()?;
-    println!("   Total words: {}", word_count.trim());
+    println!("   ✅ Total words: {}", word_count.trim());
 
     // CSV processing
     println!("\n📊 CSV data analysis:");
     println!("   Processing CSV file with header extraction");
     let file = File::open("data.csv")?;
     let header = file.pipe(cmd!("head", "-1")).output()?;
-    println!("   CSV header: {}", header.trim());
+    println!("   ✅ CSV header: {}", header.trim());
 
     let file = File::open("data.csv")?;
     let record_count = file
         .pipe(cmd!("tail", "-n", "+2")) // Skip header
         .pipe(cmd!("wc", "-l"))
         .output()?;
-    println!("   Data records: {}", record_count.trim());
+    println!("   ✅ Data records: {}", record_count.trim());
 
     Ok(())
 }
@@ -211,7 +214,7 @@ fn advanced_chaining_examples() -> Result<()> {
         if !line.trim().is_empty() {
             let parts: Vec<&str> = line.split_whitespace().collect();
             if parts.len() >= 2 {
-                println!("     {}: {} occurrences", parts[1], parts[0]);
+                println!("     📊 {}: {} occurrences", parts[1], parts[0]);
             }
         }
     }
@@ -226,7 +229,7 @@ fn advanced_chaining_examples() -> Result<()> {
         .pipe(cmd!("sort", "-n"))  // Sort numerically
         .pipe(cmd!("awk", "{sum+=$1; count++} END {printf \"Min: %d, Max: %d, Avg: %.1f\\n\", $1, max, sum/count} {if(NR==1) min=$1; max=$1} {if($1>max) max=$1}"))
         .output()?;
-    println!("   Age statistics: {}", age_stats.trim());
+    println!("   ✅ Age statistics: {}", age_stats.trim());
 
     // Real-time processing simulation
     println!("\n⏱️ Stream processing with immediate output:");
